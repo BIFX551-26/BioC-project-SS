@@ -1,3 +1,4 @@
+---
 
 title: Analysis of the human embryonic stem cell (hESC) dataset generated with Smart-seq2 using Bioconductor package simple SingleCellExperiment
 Author: Saifun Nahar, Mohammad Suleman, Arman Moshasha
@@ -13,7 +14,7 @@ format:
     execute:
       echo: false
       eval: true
-
+---
 # Introduction
 Smart-seq2 is the sequencing method used for the Messmer human embryonic stem cell (hESC) dataset. The analysis is performed using the Bioconductor package simple SingleCellExperiment, which is designed for handling single-cell RNA sequencing data. The workflow includes several steps such as data preprocessing, quality control, normalization, dimensionality reduction, clustering, and differential expression analysis. The goal of the analysis is to identify distinct cell populations and understand their gene expression profiles in the context of human embryonic stem cells.
 
