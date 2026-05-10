@@ -439,12 +439,6 @@ Saifun Nahar, Arman Moshasha, Suleman Mohammad
 </div>
 </div>
 </div>
-<div class="quarto-figure quarto-figure-center">
-<figure>
-<p><img data-src="MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-1.png" width="502"></p>
-<figcaption>Figure 1.1: Distribution of each QC metric across cells in the Paul HSC dataset. Each point repr</figcaption>
-</figure>
-</div>
 <h3 id="normalization-hvgs">1.3 Normalization &amp; HVGs:</h3>
 <ul>
 <li>Deconvolution size factors (<code>computeSumFactors</code>) and <code>logNormCounts</code>.</li>
@@ -469,18 +463,6 @@ Saifun Nahar, Arman Moshasha, Suleman Mohammad
 <span id="cb8-10"><a href=""></a>dec.paul <span class="ot">&lt;-</span> <span class="fu">modelGeneVarByPoisson</span>(sce.paul) </span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </div>
-</div>
-<div class="quarto-figure quarto-figure-center">
-<figure>
-<p><img data-src="MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-2.png" width="470"></p>
-<figcaption>Figure 1.2: Relationship between the library size factors and the deconvolution size factors in the Paul HSC dataset.</figcaption>
-</figure>
-</div>
-<div class="quarto-figure quarto-figure-center">
-<figure>
-<p><img data-src="MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-3.png" width="419"></p>
-<figcaption>Figure 1.3: Per-gene variance as a function of the mean for the log-expression values in the Paul HSC dataset. Each point represents a gene (black) with the mean-variance trend (blue) fitted to simulated Poisson noise.</figcaption>
-</figure>
 </div>
 <h3 id="dimensional-reduction-clustering">1.4 Dimensional reduction &amp; clustering:</h3>
 <ul>
@@ -507,12 +489,6 @@ Saifun Nahar, Arman Moshasha, Suleman Mohammad
 <span id="cb10-5"><a href=""></a>          <span class="fu">facet_wrap</span>(<span class="sc">~</span>Batch_desc)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </div>
-</div>
-<div class="quarto-figure quarto-figure-center">
-<figure>
-<p><img data-src="MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-5.png" width="474"></p>
-<figcaption>Figure 1.4 : t -SNE plot of the Paul HSC dataset, where each point represents a cell and is colored according to the assigned cluster.</figcaption>
-</figure>
 </div>
 <h3 id="markers">1.5 Markers:</h3>
 <ul>
@@ -571,12 +547,6 @@ Saifun Nahar, Arman Moshasha, Suleman Mohammad
 </div>
 </div>
 </div>
-<div class="quarto-figure quarto-figure-center">
-<figure>
-<p><img data-src="MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-7.png" width="528"></p>
-<figcaption>Figure 2.1: Distribution of each QC metric across cells in the Bach mammary gland dataset. Each point represents a cell and is colored according to whether that cell was discarded.</figcaption>
-</figure>
-</div>
 <h3 id="normalization-hvgs-1">2.3 Normalization &amp; HVGs:</h3>
 <ul>
 <li>Deconvolution size factors (<code>computeSumFactors</code>) and <code>logNormCounts</code>.</li>
@@ -606,18 +576,6 @@ Saifun Nahar, Arman Moshasha, Suleman Mohammad
 </div>
 </div>
 <pre><code>##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.  ##   0.264   0.520   0.752   1.000   1.207  10.790</code></pre>
-<div class="quarto-figure quarto-figure-center">
-<figure>
-<p><img data-src="MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-9.png" width="405"></p>
-<figcaption>Figure 2.2: Relationship between the library size factors and the deconvolution size factors in the Bach mammary gland dataset.</figcaption>
-</figure>
-</div>
-<div class="quarto-figure quarto-figure-center">
-<figure>
-<p><img data-src="MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-10.png" width="424"></p>
-<figcaption>Figure 2.3: Per-gene variance as a function of the mean for the log-expression values in the ch mammary gland dataset. Each point represents a gene (black) with the mean-variance trend (blue) fitted to simulated Poisson counts.</figcaption>
-</figure>
-</div>
 <h3 id="dimensional-reduction-clustering-1">2.4 Dimensional reduction &amp; clustering:</h3>
 <ul>
 <li><code>denoisePCA</code> on HVGs, followed by t‑SNE.<br>
@@ -641,12 +599,6 @@ Saifun Nahar, Arman Moshasha, Suleman Mohammad
 <span id="cb18-2"><a href=""></a><span class="fu">colLabels</span>(sce.mam) <span class="ot">&lt;-</span> <span class="fu">factor</span>(igraph<span class="sc">::</span><span class="fu">cluster_walktrap</span>(snn.gr)<span class="sc">$</span>membership)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </div>
-</div>
-<div class="quarto-figure quarto-figure-center">
-<figure>
-<p><img data-src="MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-11.png" width="452"></p>
-<figcaption>Figure 2.4: Obligatory t -SNE plot of the Bach mammary gland dataset, where each point represents a cell and is colored according to the assigned cluster.</figcaption>
-</figure>
 </div>
 <h3 id="markers-1">2.5 Markers:</h3>
 <ul>
@@ -716,12 +668,6 @@ Saifun Nahar, Arman Moshasha, Suleman Mohammad
 </div>
 </div>
 </div>
-<div class="quarto-figure quarto-figure-center">
-<figure>
-<p><img data-src="MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-12.png" width="450"></p>
-<figcaption>Figure 3.1: Distribution of QC metrics across batches (x-axis) and phenotypes (facets) for cells in the Messmer hESC dataset. Each point is a cell and is colored by whether it was discarded.</figcaption>
-</figure>
-</div>
 <h3 id="normalization-variance-modeling">3.3 Normalization &amp; variance modeling:</h3>
 <ul>
 <li>Deconvolution size factors (<code>computeSumFactors</code>) and logNormCounts.</li>
@@ -742,12 +688,6 @@ Saifun Nahar, Arman Moshasha, Suleman Mohammad
 <span id="cb22-6"><a href=""></a>sce.mess <span class="ot">&lt;-</span> <span class="fu">logNormCounts</span>(sce.mess)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </div>
-</div>
-<div class="quarto-figure quarto-figure-center">
-<figure>
-<p><img data-src="MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-13.png" width="517"></p>
-<figcaption>Figure 3.2: Deconvolution size factors plotted against the library size (left) and spike-in size factors plotted against the deconvolution size factors (right). Each point is a cell and is colored by its phenotype.</figcaption>
-</figure>
 </div>
 <h3 id="cell-cycle-batch-correction">3.4 Cell cycle &amp; batch correction:</h3>
 <ul>
@@ -771,12 +711,6 @@ Saifun Nahar, Arman Moshasha, Suleman Mohammad
 <span id="cb23-7"><a href=""></a>dec <span class="ot">&lt;-</span> <span class="fu">modelGeneVarWithSpikes</span>(sce.mess, <span class="st">"ERCC"</span>, <span class="at">block =</span> sce.mess<span class="sc">$</span><span class="st">`</span><span class="at">experiment batch</span><span class="st">`</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </div>
-</div>
-<div class="quarto-figure quarto-figure-center">
-<figure>
-<p><img data-src="MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-15.png" width="531"></p>
-<figcaption>Figure 3.3: Per-gene variance of the log-normalized expression values in the Messmer hESC dataset, plotted against the mean for each batch. Each point represents a gene with spike-ins shown in red and the fitted trend shown in blue.</figcaption>
-</figure>
 </div>
 <h3 id="dimensional-reduction-clustering-2">3.5 Dimensional reduction &amp; clustering:</h3>
 <ul>
@@ -806,13 +740,8 @@ Saifun Nahar, Arman Moshasha, Suleman Mohammad
 </div>
 </div>
 </div>
-<div class="quarto-figure quarto-figure-center">
-<figure>
-<p><img data-src="MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-16.png" width="670"></p>
-<figcaption>Figure 3.4: Obligatory t -SNE plots of the Messmer hESC dataset, where each point is a cell and is colored by various attributes.</figcaption>
-</figure>
-</div>
-<h3 id="messmer-hesc-results-what-we-learned">3.6 Messmer hESC – Results (what we learned)</h3>
+
+<img data-src="MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-16.png" width="670" class="r-stretch quarto-figure-center"><p class="caption">Figure 3.4: Obligatory t -SNE plots of the Messmer hESC dataset, where each point is a cell and is colored by various attributes.</p><h3 id="messmer-hesc-results-what-we-learned">3.6 Messmer hESC – Results (what we learned)</h3>
 <ul>
 <li>QC combining mitochondrial and ERCC metrics removed low-quality cells evenly across batches and phenotypes.</li>
 <li>Spike‑in–aware variance modeling identified HVGs that separate naive and primed states instead of just capturing technical noise.</li>

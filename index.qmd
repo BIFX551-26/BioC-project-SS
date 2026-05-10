@@ -9,7 +9,6 @@ format:
     slide-number: true
     chalkboard: true
     footer: "OSCA/simpleSingleCell workflows"
-  gfm: default
 execute:
   warning: false
   message: false
@@ -101,7 +100,7 @@ Constructing the count matrix depends strongly on the experimental protocol:
 
 -   High coverage per cell, non-UMI read counts.
 
-###  [3-Dataset using  'simpleSingleCell' workflow pipeline:]{.underline}
+### [3-Dataset using 'simpleSingleCell' workflow pipeline:]{.underline}
 
 Goal: Comparing three scRNA‑seq protocols and biological systems using a common Bioconductor workflow 'simpleSingleCell\`.
 
@@ -209,8 +208,6 @@ ignore <- union(names(lib.thresholds)[lib.thresholds < 100],
 ```
 :::
 
-![Figure 1.1: Distribution of each QC metric across cells in the Paul HSC dataset. Each point repr](MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-1.png){fig-align="center" width="502"}
-
 ### 1.3 Normalization & HVGs:
 
 -   Deconvolution size factors (`computeSumFactors`) and `logNormCounts`.
@@ -232,10 +229,6 @@ set.seed(10010101)
 dec.paul <- modelGeneVarByPoisson(sce.paul) 
 ```
 :::
-
-![Figure 1.2: Relationship between the library size factors and the deconvolution size factors in the Paul HSC dataset.](MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-2.png){fig-align="center" width="470"}
-
-![Figure 1.3: Per-gene variance as a function of the mean for the log-expression values in the Paul HSC dataset. Each point represents a gene (black) with the mean-variance trend (blue) fitted to simulated Poisson noise.](MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-3.png){fig-align="center" width="419"}
 
 ### 1.4 Dimensional reduction & clustering:
 
@@ -262,8 +255,6 @@ plotTSNE(sce.paul, colour_by="label", other_fields="Batch_desc") +
           facet_wrap(~Batch_desc)
 ```
 :::
-
-![Figure 1.4 : t -SNE plot of the Paul HSC dataset, where each point represents a cell and is colored according to the assigned cluster.](MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-5.png){fig-align="center" width="474"}
 
 ### 1.5 Markers:
 
@@ -319,8 +310,6 @@ sce.mam <- sce.mam[,!qc$discard]
 ```
 :::
 
-![Figure 2.1: Distribution of each QC metric across cells in the Bach mammary gland dataset. Each point represents a cell and is colored according to whether that cell was discarded.](MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-7.png){fig-align="center" width="528"}
-
 ### 2.3 Normalization & HVGs:
 
 -   Deconvolution size factors (`computeSumFactors`) and `logNormCounts`.
@@ -354,10 +343,6 @@ plot(dec.mam$mean, dec.mam$total, pch=16, cex=0.5,
 ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.  ##   0.264   0.520   0.752   1.000   1.207  10.790
 ```
 
-![Figure 2.2: Relationship between the library size factors and the deconvolution size factors in the Bach mammary gland dataset.](MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-9.png){fig-align="center" width="405"}
-
-![Figure 2.3: Per-gene variance as a function of the mean for the log-expression values in the ch mammary gland dataset. Each point represents a gene (black) with the mean-variance trend (blue) fitted to simulated Poisson counts.](MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-10.png){fig-align="center" width="424"}
-
 ### 2.4 Dimensional reduction & clustering:
 
 -   `denoisePCA` on HVGs, followed by t‑SNE.\
@@ -381,8 +366,6 @@ snn.gr <- buildSNNGraph(sce.mam, use.dimred="PCA", k=25)
 colLabels(sce.mam) <- factor(igraph::cluster_walktrap(snn.gr)$membership)
 ```
 :::
-
-![Figure 2.4: Obligatory t -SNE plot of the Bach mammary gland dataset, where each point represents a cell and is colored according to the assigned cluster.](MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-11.png){fig-align="center" width="452"}
 
 ### 2.5 Markers:
 
@@ -446,8 +429,6 @@ reasons <- perCellQCFilters(sce.mess,
 ```
 :::
 
-![Figure 3.1: Distribution of QC metrics across batches (x-axis) and phenotypes (facets) for cells in the Messmer hESC dataset. Each point is a cell and is colored by whether it was discarded.](MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-12.png){fig-align="center" width="450"}
-
 ### 3.3 Normalization & variance modeling:
 
 -   Deconvolution size factors (`computeSumFactors`) and logNormCounts.
@@ -465,8 +446,6 @@ sce.mess <- computeSumFactors(sce.mess, cluster=clusters)
 sce.mess <- logNormCounts(sce.mess)
 ```
 :::
-
-![Figure 3.2: Deconvolution size factors plotted against the library size (left) and spike-in size factors plotted against the deconvolution size factors (right). Each point is a cell and is colored by its phenotype.](MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-13.png){fig-align="center" width="517"}
 
 ### 3.4 Cell cycle & batch correction:
 
@@ -487,8 +466,6 @@ sce.mess$phase <- assigned$phases
 dec <- modelGeneVarWithSpikes(sce.mess, "ERCC", block = sce.mess$`experiment batch`)
 ```
 :::
-
-![Figure 3.3: Per-gene variance of the log-normalized expression values in the Messmer hESC dataset, plotted against the mean for each batch. Each point represents a gene with spike-ins shown in red and the fitted trend shown in blue.](MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-15.png){fig-align="center" width="531"}
 
 ### 3.5 Dimensional reduction & clustering:
 

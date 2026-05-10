@@ -596,12 +596,6 @@ gridExtra::grid.arrange(
 
 **Interpretation:** clusters correspond to pluripotent ESC states and early differentiation trajectories, based on markers such as *POU5F1 (OCT4)*, *NANOG*, *SOX2* for pluripotency and lineage markers for differentiation.
 
-## Session Info:
-
-```{r}
-sessionInfo()
-```
-
 # 4. Cross-dataset comparison (high level)
 
 ## 4.1 Protocol differences
@@ -645,6 +639,12 @@ cat("Paul HSC cells after QC:", ncol(sce.paul), "\n")
 cat("Bach mammary cells after QC:", ncol(sce.mam), "\n")
 cat("Messmer hESC cells after QC:", ncol(sce.mess), "\n")
 ```
+
+## Session Info:
+```{r}
+sessionInfo()
+```
+
 
 # References:
 
