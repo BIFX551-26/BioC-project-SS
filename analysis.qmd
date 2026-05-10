@@ -1,54 +1,454 @@
 ---
-
-title: Analysis of the human embryonic stem cell (hESC) dataset generated with Smart-seq2 using Bioconductor package simple SingleCellExperiment
-Author: Saifun Nahar, Mohammad Suleman, Arman Moshasha
-bibliography: references.bib
+title: "Comparing scRNA-seq Protocols with Bioconductor simpleSingleCell wokflow"
+subtitle: "Paul et al. Mouse HSC (MARS-seq), Bach et al. Mouse mammary (10x Genomics), Messmer et al. Human ESC (Smart-seq2)"
+author: "Saifun Nahar, Arman Moshasha, Suleman Mohammad"
+date: 05/09/2026
 format:
-  gfm:
-    output-file: README.md
-    execute:
-      echo: false
-      eval: true
-  revealjs:
-    slide-level: 4
-    execute:
-      echo: false
-      eval: true
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: false
+    df-print: paged
+    theme: cosmo
+execute:
+  warning: false
+  message: false
+  cache: true
 ---
-# Introduction
-Smart-seq2 is the sequencing method used for the Messmer human embryonic stem cell (hESC) dataset. The analysis is performed using the Bioconductor package simple SingleCellExperiment, which is designed for handling single-cell RNA sequencing data. The workflow includes several steps such as data preprocessing, quality control, normalization, dimensionality reduction, clustering, and differential expression analysis. The goal of the analysis is to identify distinct cell populations and understand their gene expression profiles in the context of human embryonic stem cells.
 
-# Data loading
-The dataset is loaded into R using the `readRDS` function, which reads the serialized R object containing the single-cell data. The data is stored in a SingleCellExperiment object, which allows for efficient handling and analysis of single-cell RNA-seq data. The dataset includes information about the experiment batch and phenotype of the cells, which will be used for downstream analyses.
+# **Overview**
+
+Sequencing data from single-cell RNA-seq experiments must be converted into a matrix of expression values. This is usually a count matrix containing the number of reads mapped to each gene (row) in each cell (column). Alternatively, the counts may be that of the number of unique molecular identifiers (UMIs); these are interpreted in the same manner as read counts but are less affected by PCR artifacts during library preparation (Islam et al. 2014).
+
+Constructing a count matrix from raw scRNA-seq data encompasses a variety of different experimental protocols.
+
+Generally followed Protocols in Present day scRNA-seq experiments can be broadly categorized as follows:
+
+1.  **Droplet-based protocols** : 10X Genomics, inDrop and Drop-seq;
+2.  .**Plate-based protocols with UMIs** : CEL-seq2 and MARS-seq
+3.  **Plate-based protocols with reads** : Smart-seq2 and others like sciRNA-seq
+
+Each approach requires a different processing pipeline to deal with cell Demultiplexing and UMI Deduplication (if applicable).
+
+This document is an effort to combine these 3 protocols in one place for easy analysis while pointing out differences in each individual protocols . For this analysis we selected three different pipelines namely **10x Genomics**, **MARS-seq** and **Smart-seq2** representing one from each protocol.
+
+This document will briefly describe different methods used to generate a count matrix and read it into R, different approaches followed for single-cell RNA‑seq analyses while each using a different protocol, dataset and biological system.
+
+1.  Paul et al. Mouse Hematopoietic Stem and Progenitor cells (HSCs) measured with **MARS‑seq**.
+2.  Bach et al. Mouse mammary Epithelial and Stromal cells profiled with **10x Genomics**.
+3.  Messmer et al. Human embryonic stem cells (hESCs) profiled with **Smart‑seq2**, including differentiation states.
+
+All three analyses follow the same core steps:
+
+1\. Data loading and basic inspection
+
+2\. Per-cell quality control (QC)
+
+3\. Normalization
+
+4\. Variance Modelling and highly variable gene (HVG) selection
+
+5.Dimensionality reduction (PCA, UMAP)
+
+6\. Graph-based clustering
+
+7\. Marker detection and biological interpretation
+
+Each section is self‑contained but uses the same core Bioconductor tools so you can compare workflows across protocols.
+
+```{r}
+# Core Bioconductor infrastructure
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+  install.packages("BiocManager")
+}
+```
+
+```{r}
+#|echo: false
+
+# Installing the simpleSingleCell and other required packages like Datasets and annotation for mouse/human for our analysis.
+##Uncomment this code if running for this packages for the first time inside R-console
+#BiocManager::install(c(
+#   "SingleCellExperiment","simpleSingleCell","scuttle", "scater", "scran", "BiocSingular", "batchelor", "bluster", 
+#    "scRNAseq",        # Paul & Muraro style datasets
+#    "mousebrainData",  # for Bach-type data if needed
+#   "celldex",         # reference markers
+#    "EnsDb.Hsapiens.v86",
+#    "EnsDb.Mmusculus.v79"), ask = FALSE, update = FALSE)
+
+```
+
+```{r}
+# Loading required packages
+
+suppressPackageStartupMessages({
+  library(SingleCellExperiment)
+  library(scRNAseq)
+  library(scuttle)
+  library(scater)
+  library(scran)
+  library(batchelor)
+  library(bluster)
+  library(EnsDb.Hsapiens.v86)
+  library(EnsDb.Mmusculus.v79)
+  library(ggplot2)
+  library(dplyr)
+})
+```
+
+# **1. "MARS‑seq": Paul et al. Mouse Haematopoietic stem cell (HSC)**
+
+## 1.1 Introduction
+
+This performs an analysis of the mouse haematopoietic stem cell (HSC) dataset generated with MARS-seq (Paul et al. [2015](https://doi.org/10.1016/j.cell.2015.11.013))^\[1\]^. Cells were extracted from multiple mice under different experimental conditions (i.e., sorting protocols) and libraries were prepared using a series of 384-well plates.
+
+## 1.2 Data loading
+
 ```{r}
 library(scRNAseq)
+sce.paul <- PaulHSCData(ensembl=TRUE)
+```
+
+```{r}
+library(AnnotationHub) 
+ens.mm.v97 <- AnnotationHub()[["AH73905"]] 
+anno <- AnnotationDbi::select(ens.mm.v97, 
+               keys=rownames(sce.paul),      
+               keytype="GENEID", 
+               columns=c("SYMBOL", "SEQNAME")) 
+
+rowData(sce.paul) <- anno[match(rownames(sce.paul), anno$GENEID),]
+```
+
+After loading and annotation, we inspect the resulting `SingleCellExperiment` object:
+
+```{r}
+sce.paul
+```
+
+## 1.3 Quality control
+
+```{r}
+unfiltered <- sce.paul
+```
+
+For some reason, only one mitochondrial transcripts are available, so we will perform quality control using only the library size and number of detected features. Ideally, we would simply block on the plate of origin to account for differences in processing, but unfortunately, it seems that many plates have a large proportion (if not outright majority) of cells with poor values for both metrics. We identify such plates based on the presence of very low outlier thresholds, for some arbitrary definition of “low”; we then redefine thresholds using information from the other (presumably high-quality) plates.
+
+```{r}
+library(scater)
+stats <- perCellQCMetrics(sce.paul) 
+qc <- quickPerCellQC(stats, batch=sce.paul$Plate_ID)
+
+# Detecting batches with unusually low threshold values.
+lib.thresholds <- attr(qc$low_lib_size, "thresholds")["lower",]
+nfeat.thresholds <- attr(qc$low_n_features, "thresholds")["lower",]
+ignore <- union(names(lib.thresholds)[lib.thresholds < 100],
+    names(nfeat.thresholds)[nfeat.thresholds < 100])
+
+# Repeating the QC using only the "high-quality" batches.
+qc2 <- quickPerCellQC(stats, batch=sce.paul$Plate_ID,
+    subset=!sce.paul$Plate_ID %in% ignore)
+sce.paul <- sce.paul[,!qc2$discard]
+```
+
+examine the number of cells discarded for each reason.
+
+```{r}
+colSums(as.matrix(qc2))
+```
+
+We create some diagnostic plots for each metric.
+
+```{r}
+colData(unfiltered) <- cbind(colData(unfiltered), stats)
+unfiltered$discard <- qc2$discard
+unfiltered$Plate_ID <- factor(unfiltered$Plate_ID)
+
+gridExtra::grid.arrange(
+    plotColData(unfiltered, y="sum", x="Plate_ID", colour_by="discard") +
+        scale_y_log10() + ggtitle("Total count"),
+    plotColData(unfiltered, y="detected", x="Plate_ID", colour_by="discard") +
+        scale_y_log10() + ggtitle("Detected features"),
+    ncol=1
+)
+```
+
+## 1.4 Normalization
+
+```{r}
+library(scran)
+set.seed(101000110)
+clusters <- quickCluster(sce.paul)
+sce.paul <- computeSumFactors(sce.paul, clusters=clusters)
+sce.paul <- logNormCounts(sce.paul)
+```
+
+We examine some key metrics for the distribution of size factors, and compare it to the library sizes as a sanity check.
+
+```{r}
+summary(sizeFactors(sce.paul))
+
+plot(librarySizeFactors(sce.paul), sizeFactors(sce.paul), pch=16,     
+     xlab="Library size factors", 
+     ylab="Deconvolution factors", 
+     log="xy")
+```
+
+## 1.5 Variance Modelling
+
+We fit a mean-variance trend to the endogenous genes to detect highly variable genes. Unfortunately, the plates are confounded with an experimental treatment (`Batch_desc`) so we cannot block on the plate of origin.
+
+```{r}
+set.seed(10010101) 
+dec.paul <- modelGeneVarByPoisson(sce.paul) 
+
+top.paul <- getTopHVGs(dec.paul, prop=0.1)
+
+plot(dec.paul$mean, dec.paul$total, pch=16, cex=0.5,      
+     xlab="Mean of log-expression", 
+     ylab="Variance of log-expression") 
+curve(metadata(dec.paul)$trend(x), col="blue", add=TRUE)
+```
+
+```{r}
+set.seed(1010101) 
+dec.paul <- modelGeneVarByPoisson(sce.paul) 
+top.paul <- getTopHVGs(dec.paul, prop=0.1)
+```
+
+```{r}
+plot(dec.paul$mean, dec.paul$total, pch=16, cex=0.5,      
+     xlab="Mean of log-expression", 
+     ylab="Variance of log-expression") 
+curve(metadata(dec.paul)$trend(x), col="blue", add=TRUE)
+```
+
+## 1.6 Dimensionality reduction
+
+```{r}
+set.seed(101010011) 
+sce.paul <- denoisePCA(sce.paul, technical=dec.paul, subset.row=top.paul) 
+sce.paul <- runTSNE(sce.paul, dimred="PCA")
+```
+
+We check that the number of retained PCs is sensible.
+
+```{r}
+ncol(reducedDim(sce.paul, "PCA"))
+```
+
+## 1.7 Clustering
+
+```{r}
+snn.gr <- buildSNNGraph(sce.paul, use.dimred="PCA", type="jaccard") 
+colLabels(sce.paul) <- factor(igraph::cluster_louvain(snn.gr)$membership)
+```
+
+These is a strong relationship between the cluster and the experimental treatment, which is to be expected. Of course, this may also be attributable to some batch effect; the confounded nature of the experimental design makes it difficult to make any confident statements either way.
+
+```{r}
+tab <- table(colLabels(sce.paul), sce.paul$Batch_desc) 
+rownames(tab) <- paste("Cluster", rownames(tab)) 
+pheatmap::pheatmap(log10(tab+10), color=viridis::viridis(100))
+```
+
+```{r}
+plotTSNE(sce.paul, colour_by="label")
+```
+
+```{r}
+plotTSNE(sce.paul, colour_by="label", other_fields="Batch_desc") +      
+          facet_wrap(~Batch_desc)
+```
+
+**Interpretation:** clusters correspond roughly to different HSC and progenitor states along the myeloid-erythroid differentiation trajectory (from the original study), based on markers such as *Gata1*, *Mpo*, *Elane*, etc.
+
+# **2."10x Genomics": Bach et al. Mouse mammary gland**
+
+## 2.1 Introduction
+
+This performs an analysis of the Bach et al. (2017)^\[2\]^ 10X Genomics dataset, from which we will consider a single sample of epithelial cells from the mouse mammary gland during gestation.
+
+## 2.2 Data loading
+
+```{r}
+library(scRNAseq) 
+
+sce.mam <- BachMammaryData(samples="G_1")
+```
+
+```{r}
+library(scater) 
+rownames(sce.mam) <- uniquifyFeatureNames(rowData(sce.mam)$Ensembl, rowData(sce.mam)$Symbol) 
+
+library(AnnotationHub) 
+
+ens.mm.v97 <- AnnotationHub()[["AH73905"]] 
+rowData(sce.mam)$SEQNAME <- mapIds(ens.mm.v97, keys=rowData(sce.mam)$Ensembl,     
+                                   keytype="GENEID", 
+                                   column="SEQNAME")
+```
+
+## 2.3 Quality control
+
+```{r}
+unfiltered <- sce.mam
+```
+
+```{r}
+is.mito <- rowData(sce.mam)$SEQNAME == "MT" 
+stats <- perCellQCMetrics(sce.mam, subsets=list(Mito=which(is.mito))) 
+qc <- quickPerCellQC(stats, percent_subsets="subsets_Mito_percent") 
+sce.mam <- sce.mam[,!qc$discard]
+```
+
+```{r}
+colData(unfiltered) <- cbind(colData(unfiltered), stats)
+unfiltered$discard <- qc$discard
+
+gridExtra::grid.arrange(
+    plotColData(unfiltered, y="sum", colour_by="discard") + 
+        scale_y_log10() + ggtitle("Total count"),
+    plotColData(unfiltered, y="detected", colour_by="discard") + 
+        scale_y_log10() + ggtitle("Detected features"),
+    plotColData(unfiltered, y="subsets_Mito_percent", 
+        colour_by="discard") + ggtitle("Mito percent"),
+    ncol=2
+)
+```
+
+```{r}
+plotColData(unfiltered, x="sum", 
+            y="subsets_Mito_percent",      
+            colour_by="discard") + 
+scale_x_log10()
+```
+
+```{r}
+colSums(as.matrix(qc))
+```
+
+## 2.4 Normalization
+
+```{r}
+library(scran) 
+set.seed(10100110) 
+clusters <- quickCluster(sce.mam) 
+sce.mam <- computeSumFactors(sce.mam, clusters=clusters) 
+sce.mam <- logNormCounts(sce.mam)
+```
+
+```{r}
+summary(sizeFactors(sce.mam))
+```
+
+```{r}
+plot(librarySizeFactors(sce.mam), sizeFactors(sce.mam), pch=16,     
+        xlab="Library size factors", 
+        ylab="Deconvolution factors", 
+        log="xy")
+```
+
+## 2.5 Variance modelling
+
+We use a Poisson-based technical trend to capture more genuine biological variation in the biological component.
+
+```{r}
+set.seed(1010101) 
+
+dec.mam <- modelGeneVarByPoisson(sce.mam) 
+
+top.mam <- getTopHVGs(dec.mam, prop=0.1)
+```
+
+```{r}
+plot(dec.mam$mean, dec.mam$total, pch=16, cex=0.5,     
+    xlab="Mean of log-expression", 
+    ylab="Variance of log-expression") 
+
+curfit <- metadata(dec.mam) 
+
+curve(curfit$trend(x), col='dodgerblue', add=TRUE, lwd=2)
+```
+
+## 2.6 Dimensionality reduction
+
+```{r}
+library(BiocSingular) 
+set.seed(101010011) 
+sce.mam <- denoisePCA(sce.mam, technical=dec.mam, subset.row=top.mam) 
+sce.mam <- runTSNE(sce.mam, dimred="PCA")
+```
+
+```{r}
+ncol(reducedDim(sce.mam, "PCA"))
+```
+
+## 2.7 Clustering
+
+We use a higher `k` to obtain coarser clusters (for use in `doubletCluster()` later).
+
+```{r}
+snn.gr <- buildSNNGraph(sce.mam, use.dimred="PCA", k=25) 
+colLabels(sce.mam) <- factor(igraph::cluster_walktrap(snn.gr)$membership)
+```
+
+```{r}
+table(colLabels(sce.mam))
+```
+
+```{r}
+plotTSNE(sce.mam, colour_by="label")
+```
+
+**Interpretation:** clusters correspond to mammary basal cells, luminal progenitors, mature luminal cells, and stromal/immune populations, based on markers such as *Krt5*, *Krt8/18*, *Esr1*, etc.
+
+# **3. "Smart‑seq2:" Messmer et al. Human Embryonic Stem-cells (hESC)**
+
+## 3.1 Introduction:
+
+Smart-seq2 is the sequencing method used for the Messmer (et al. 2019)^\[3\]^ human embryonic stem cell (hESC) Messmer dataset. The analysis is performed using the Bioconductor package simple SingleCellExperiment, which is designed for handling single-cell RNA sequencing data. The workflow includes several steps such as data preprocessing, quality control, normalization, dimensionality reduction, clustering, and differential expression analysis. The goal of the analysis is to identify distinct cell populations and understand their gene expression profiles in the context of human embryonic stem cells.
+
+## 3.2 Data loading:
+
+The dataset is loaded into R using the `readRDS` function, which reads the serialized R object containing the single-cell data. The data is stored in a SingleCellExperiment object, which allows for efficient handling and analysis of single-cell RNA-seq data. The dataset includes information about the experiment batch and phenotype of the cells, which will be used for downstream analyses.
+
+```{r}
+library(scRNAseq)
+
 sce.mess <- MessmerESCData()
 sce.mess$`experiment batch` <- factor(sce.mess$`experiment batch`)
 ```
 
 ```{r}
 library(AnnotationHub)
+
 ens.hs.v97 <- AnnotationHub()[["AH73881"]]
-anno <- select(ens.hs.v97, keys=rownames(sce.mess), 
-    keytype="GENEID", columns=c("SYMBOL"))
+anno <- AnnotationDbi::select(ens.hs.v97, keys=rownames(sce.mess), 
+    keytype="GENEID", 
+    columns=c("SYMBOL"))
+
 rowData(sce.mess) <- anno[match(rownames(sce.mess), anno$GENEID),]
 ```
 
-# Quality control
+## 3.3 Quality control
+
 Quality control is performed to filter out low-quality cells and genes. This typically involves calculating metrics such as the number of detected genes, total counts per cell, and the percentage of mitochondrial gene expression. Cells that do not meet certain thresholds for these metrics are removed from the analysis to ensure that only high-quality data is used for downstream analysis.
 
 ```{r}
 library(scuttle)
 
 # Calculate QC metrics
-sce.mess <- addPerCellQCMetrics(sce.mess, subsets=list(Mito=grep("^MT-", rowData(sce.mess)$SYMBOL)))
+sce.mess <- addPerCellQCMetrics(sce.mess, 
+                                subsets=list(Mito=grep("^MT-", 
+                                                  rowData(sce.mess)$SYMBOL)))
 
 # Define filtering thresholds and identify low-quality cells
 qc.stats <- perCellQCMetrics(sce.mess)
 reasons <- perCellQCFilters(sce.mess, 
-    sub.fields=c("subsets_Mito_percent", "altexps_ERCC_percent"))
-filtered <- reasons$discard
+                            sub.fields=c("subsets_Mito_percent", "altexps_ERCC_percent"))
 
+filtered <- reasons$discard
 colSums(as.matrix(filtered))
 ```
 
@@ -56,8 +456,7 @@ colSums(as.matrix(filtered))
 library(ggplot2)
 library(scater)
 
-gridExtra::grid.arrange(
-    plotColData(sce.mess, x="experiment batch", y="sum",
+gridExtra::grid.arrange(plotColData(sce.mess, x="experiment batch", y="sum",
         colour_by=I(filtered), other_field="phenotype") +
         facet_wrap(~phenotype) + scale_y_log10(),
     plotColData(sce.mess, x="experiment batch", y="detected",
@@ -72,7 +471,9 @@ gridExtra::grid.arrange(
     ncol=1
 )
 ```
-# Normalization
+
+## 3.4 Normalization
+
 Normalization is performed to account for differences in sequencing depth and other technical variations across cells. This step typically involves scaling the counts to a common library size and applying a transformation to stabilize the variance. Normalization allows for more accurate comparisons of gene expression levels across cells and is essential for downstream analyses such as clustering and differential expression.
 
 ```{r}
@@ -84,24 +485,29 @@ sce.mess <- computeSumFactors(sce.mess, cluster=clusters)
 sce.mess <- logNormCounts(sce.mess)
 
 par(mfrow=c(1,2))
-plot(sce.mess$sum, sizeFactors(sce.mess), log = "xy", pch=16,
-     xlab = "Library size (millions)", ylab = "Size factor",
+plot(sce.mess$sum, sizeFactors(sce.mess), 
+     log = "xy", pch=16,
+     xlab = "Library size (millions)", 
+     ylab = "Size factor",
      col = ifelse(sce.mess$phenotype == "naive", "black", "grey"))
 
 spike.sf <- librarySizeFactors(altExp(sce.mess, "ERCC"))
 plot(sizeFactors(sce.mess), spike.sf, log = "xy", pch=16,
-     ylab = "Spike-in size factor", xlab = "Deconvolution size factor",
+     ylab = "Spike-in size factor", 
+     xlab = "Deconvolution size factor",
      col = ifelse(sce.mess$phenotype == "naive", "black", "grey"))
 ```
-# Cell cycle phase assignment
+
+## 3.5 Cell cycle phase assignment
+
 Cell cycle phase assignment is performed to classify cells into different phases of the cell cycle (G1, S, G2/M) based on the expression of known cell cycle marker genes. This can provide insights into the proliferative state of the cells and help to identify potential sources of variation in gene expression that are related to cell cycle effects.
 
 ```{r}
 set.seed(10001)
 hs_pairs <- readRDS(system.file("exdata", "human_cycle_markers.rds", package="scran"))
 assigned <- cyclone(sce.mess, pairs=hs_pairs, 
-    gene.names=rownames(sce.mess),
-    BPPARAM=BiocParallel::MulticoreParam(10))
+                    gene.names=rownames(sce.mess),
+                    BPPARAM=BiocParallel::MulticoreParam(10))
 sce.mess$phase <- assigned$phases
 
 table(sce.mess$phase)
@@ -110,38 +516,43 @@ smoothScatter(assigned$scores$G1, assigned$scores$G2M, xlab="G1 score",
      ylab="G2/M score", pch=16)
 ```
 
-# Feature selection
+## 3.6 Feature selection
+
 Feature selection is performed to identify highly variable genes that are informative for downstream analyses such as clustering and dimensionality reduction. This typically involves calculating the variance of gene expression across cells and selecting genes that exhibit higher variability than expected based on their mean expression levels. The selected genes are then used for subsequent analyses to capture the biological heterogeneity in the dataset.
 
 ```{r}
 dec <- modelGeneVarWithSpikes(sce.mess, "ERCC", block = sce.mess$`experiment batch`)
 top.hvgs <- getTopHVGs(dec, prop = 0.1)
 par(mfrow=c(1,3))
-for (i in seq_along(dec$per.block)) {
-    current <- dec$per.block[[i]]
-    plot(current$mean, current$total, xlab="Mean log-expression", 
+for (i in seq_along(dec$per.block)) 
+{
+current <- dec$per.block[[i]]
+plot(current$mean, current$total, 
+        xlab="Mean log-expression", 
         ylab="Variance", pch=16, cex=0.5, main=paste("Batch", i))
-
-    fit <- metadata(current)
-    points(fit$mean, fit$var, col="red", pch=16)
-    curve(fit$trend(x), col='dodgerblue', add=TRUE, lwd=2)
+fit <- metadata(current)
+points(fit$mean, fit$var, col="red", pch=16)
+curve(fit$trend(x), col='dodgerblue', add=TRUE, lwd=2)
 }
 ```
-# Batch correction
+
+## 3.7 Batch correction
+
 Batch correction is performed to remove technical variations that arise from differences in experimental conditions or processing batches. This step is crucial for integrating data from multiple batches and ensuring that the observed biological differences are not confounded by batch effects. Methods such as ComBat, MNN (Mutual Nearest Neighbors), or Harmony can be used for batch correction, which adjust the gene expression values to mitigate the influence of batch-specific biases.
 
 ```{r}
 library(batchelor)
 sce.mess <- correctExperiments(sce.mess, 
-    PARAM = RegressParam(
-        design = model.matrix(~sce.mess$phenotype + sce.mess$`experiment batch`),
-        keep = 1:2 
-    )
-)
+            PARAM = RegressParam(
+                     design = model.matrix(~sce.mess$phenotype + 
+                                            sce.mess$`experiment batch`),
+                    keep = 1:2 )
+                              )
 ```
-# Dimensionality reduction
-Dimensionality reduction techniques such as Principal Component Analysis (PCA) and t-distributed Stochastic Neighbor Embedding (t-SNE) are applied to the normalized data to visualize the high-dimensional gene expression data in a lower-dimensional space. This helps to identify patterns and clusters of cells based on their gene expression profiles. PCA reduces the dimensionality by finding the directions of maximum variance in the data, while t-SNE focuses on preserving local relationships between cells.
 
+## 3.8 Dimensionality reduction
+
+Dimensionality reduction techniques such as Principal Component Analysis (PCA) and t-distributed Stochastic Neighbor Embedding (t-SNE) are applied to the normalized data to visualize the high-dimensional gene expression data in a lower-dimensional space. This helps to identify patterns and clusters of cells based on their gene expression profiles. PCA reduces the dimensionality by finding the directions of maximum variance in the data, while t-SNE focuses on preserving local relationships between cells.
 
 ```{r}
 library(matrixStats)
@@ -149,7 +560,6 @@ library(scater)
 library(MatrixGenerics)
 library(BiocSingular)
 library(gridExtra)
-library(scPCA)
 library(scuttle)
 ```
 
@@ -159,6 +569,7 @@ rowVars <- function(x, ..., useNames = TRUE) {
   matrixStats::rowVars(x, ...)
 }
 ```
+
 ```{r}
 set.seed(1101001)
 sce.mess <- runPCA(sce.mess, 
@@ -169,7 +580,7 @@ sce.mess <- runPCA(sce.mess,
 sce.mess <- runTSNE(sce.mess, dimred = "PCA", perplexity = 40)
 ```
 
-# From a naive PCA, the cell cycle appears to be a major source of biological variation within each phenotype. To mitigate this, we can regress out the cell cycle scores from the PCA.
+From a naive PCA, the cell cycle appears to be a major source of biological variation within each phenotype. To mitigate this, we can regress out the cell cycle scores from the PCA.
 
 ```{r}
 gridExtra::grid.arrange(
@@ -181,73 +592,62 @@ gridExtra::grid.arrange(
 )
 ```
 
-# We perform contrastive PCA (cPCA) and sparse cPCA (scPCA) on the corrected log-expression data to obtain the same number of PCs. Given that the naive hESCs are actually reprogrammed primed hESCs, we will use the single batch of primed-only hESCs as the “background” dataset to remove the cell cycle effect.
+***Note***: In principle, Contrastive PCA `cPCA` and Sparse PCA `scPCA` could further reduce cell‑cycle effects using primed-only cells as background, as shown in the OSCA Messmer workflow, but here we only focused on standard `PCA/t‑SNE` on batch‑corrected HVGs.
+
+**Interpretation:** clusters correspond to pluripotent ESC states and early differentiation trajectories, based on markers such as *POU5F1 (OCT4)*, *NANOG*, *SOX2* for pluripotency and lineage markers for differentiation.
+
+## Session Info:
 
 ```{r}
-library(scPCA)
-is.bg <- sce.mess$`experiment batch`=="3"
-target <- sce.mess[,!is.bg]
-background <- sce.mess[,is.bg]
-
-mat.target <- t(assay(target, "corrected")[top.hvgs,])
-mat.background <- t(assay(background, "corrected")[top.hvgs,])
-
-set.seed(1010101001)
-con_out <- scPCA(
-    target = mat.target,
-    background = mat.background,
-    penalties = 0, 
-    n_eigen = 50,
-    contrasts = 100
-)
-reducedDim(target, "cPCA") <- con_out$x
-
-set.seed(101010101)
-sparse_con_out <- scPCA(
-    target = mat.target,
-    background = mat.background,
-    penalties = 1e-4,
-    n_eigen = 50,
-    contrasts = 100,
-    alg = "rand_var_proj" 
-)
-reducedDim(target, "scPCA") <- sparse_con_out$x
+sessionInfo()
 ```
 
+# 4. Cross-dataset comparison (high level)
 
-# We see greater intermingling between phases within both the naive and primed cells after cPCA and scPCA.
+## 4.1 Protocol differences
 
-```{r}
-set.seed(1101001)
-target <- runTSNE(target, dimred = "cPCA", perplexity = 40, name="cPCA+TSNE")
-target <- runTSNE(target, dimred = "scPCA", perplexity = 40, name="scPCA+TSNE")
+-   **MARS‑seq (Paul HSC)**
+    -   Plate-based UMI protocol capturing mouse haematopoietic stem and progenitor cells.
+    -   Moderate cell numbers per plate, UMI counts with relatively shallow coverage per cell.
+-   **10X Genomics (Bach mammary)**
+    -   Droplet-based 3′ UMI protocol capturing many mammary epithelial and stromal cells during gestation.
+    -   Very large cell numbers with shallow per-cell coverage.
+-   **Smart‑seq2 (Messmer hESC)**
+    -   Plate-based full-length read protocol applied to human embryonic stem cells in naive and primed states.
+    -   Fewer cells but high read depth and sensitivity, enabling detection of lower expressed genes and isoforms.
 
-gridExtra::grid.arrange(
-    plotReducedDim(target, "cPCA+TSNE", colour_by = "phase") + ggtitle("After cPCA"),
-    plotReducedDim(target, "scPCA+TSNE", colour_by = "phase") + ggtitle("After scPCA"),
-    ncol=2
-)
+## 4.2 QC and normalization choices
+
+-   **Paul HSC (MARS‑seq)**
+    -   QC used library size and detected genes, with extra plate-aware logic to identify problematic plates before recomputing thresholds.
+    -   Normalization based on scran’s `deconvolution size factors` and `logNormCounts.`
+-   **Bach mammary (10X)**
+    -   QC combined library size, detected features, and mitochondrial percentage with `quickPerCellQC`, reflecting typical 10X QC practice.
+    -   Normalization again used `deconvolution size factors`, confirming that the approach scales to large UMI datasets.
+-   **Messmer hESC (Smart‑seq2)**
+    -   QC used mitochondrial and ERCC spike-in proportions across experiment batches and phenotypes, exploiting the high-coverage, spike‑in–rich design.
+    -   Normalization leveraged scran’s `size factors` and compared endogenous and spike‑in `size factors` to ensure consistent scaling.
+
+## 4.3 HVGs, dimensionality reduction and clustering
+
+-   **HVG selection**
+    -   Paul and Bach used Poisson-based variance modeling (`modelGeneVarByPoisson`) to define HVGs from endogenous genes.
+    -   Messmer used spike‑in‑aware variance modeling (`modelGeneVarWithSpikes`) with batch blocking, taking advantage of ERCC controls.
+-   **Dimensionality reduction**
+    -   Paul and Bach used `denoisePCA` and `t‑SNE` on **HVGs** to visualize major cell populations and trajectories.
+    -   Messmer used `PCA` and `t‑SNE` on batch‑corrected data, with additional contrastive `PCA` and `sparse cPCA` to reduce cell-cycle-driven variation.
+-   **Clustering and marker detection**
+    -   All three datasets used **SNN graphs** (`buildSNNGraph`) and Walktrap/Louvain clustering from `igraph`, followed by `findMarkers` to identify genes distinguishing clusters.
+    -   In Paul HSC, clusters captured myeloid–erythroid differentiation; in Bach, mammary cell types; in Messmer, naive/primed hESC states and differentiation trajectories.
+
+```{r cross-dataset-ncells}
+cat("Paul HSC cells after QC:", ncol(sce.paul), "\n")
+cat("Bach mammary cells after QC:", ncol(sce.mam), "\n")
+cat("Messmer hESC cells after QC:", ncol(sce.mess), "\n")
 ```
 
-# We can quantify the change in the separation between phases within each phenotype using the silhouette coefficient.
+# References:
 
-```{r}
-library(bluster)
-naive <- target[,target$phenotype=="naive"]
-primed <- target[,target$phenotype=="primed"]
-
-N <- approxSilhouette(reducedDim(naive, "PCA"), naive$phase)
-P <- approxSilhouette(reducedDim(primed, "PCA"), primed$phase)
-c(naive=mean(N$width), primed=mean(P$width))
-
-cN <- approxSilhouette(reducedDim(naive, "cPCA"), naive$phase)
-cP <- approxSilhouette(reducedDim(primed, "cPCA"), primed$phase)
-c(naive=mean(cN$width), primed=mean(cP$width))
-
-scN <- approxSilhouette(reducedDim(naive, "scPCA"), naive$phase)
-scP <- approxSilhouette(reducedDim(primed, "scPCA"), primed$phase)
-c(naive=mean(scN$width), primed=mean(scP$width))
-```
-
-# Reference:
-Messmer, T., F. von Meyenn, A. Savino, F. Santos, H. Mohammed, A. T. L. Lun, J. C. Marioni, and W. Reik. 2019. “Transcriptional heterogeneity in naive and primed human pluripotent stem cells at single-cell resolution.” Cell Rep 26 (4): 815–24.
+1.  [Paul, F., Y. Arkin, A. Giladi, D. A. Jaitin, E. Kenigsberg, H. Keren-Shaul, D. Winter, et al. 2015. “Transcriptional Heterogeneity and Lineage Commitment in Myeloid Progenitors.” *Cell* 163 (7): 1663–77.](https://doi.org/10.1016/j.cell.2015.11.013 "1")
+2.  [Bach, K., S. Pensa, M. Grzelak, J. Hadfield, D. J. Adams, J. C. Marioni, and W. T. Khaled. 2017. “Differentiation dynamics of mammary epithelial cells revealed by single-cell RNA sequencing.” *Nat Commun* 8 (1): 2128.](https://doi.org/10.1038/s41467-017-02001-5)
+3.  [Messmer, T., F. von Meyenn, A. Savino, F. Santos, H. Mohammed, A. T. L. Lun, J. C. Marioni, and W. Reik. 2019. “Transcriptional heterogeneity in naive and primed human pluripotent stem cells at single-cell resolution.” Cell Rep 26 (4): 815–24.](https://doi.org/10.1016/j.celrep.2018.12.099)

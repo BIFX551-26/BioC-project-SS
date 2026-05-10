@@ -1,0 +1,37 @@
+/*-- scss:defaults --*/
+
+/* Colors: soft green/blue bio palette */
+$body-bg: #f8fafb;
+$body-color: #222;
+$link-color: #1b7a68;
+$selection-bg: lighten($link-color, 20%);
+
+/* Headings: darker teal */
+$presentation-heading-color: #145354;
+
+/* Fonts */
+$font-family-sans-serif: "Source Sans Pro", "Helvetica Neue", Arial, sans-serif;
+$presentation-heading-font: "Source Sans Pro", "Helvetica Neue", Arial, sans-serif;
+
+/* Code blocks */
+$code-block-bg: #f2f5f7;
+$code-block-border-color: #d2dde5;
+
+
+/*-- scss:rules --*/
+
+/* Slightly larger headings */
+.reveal h2 {
+  font-size: 1.8em;
+}
+
+/* Emphasize key bullets */
+.reveal ul li strong {
+  color: #145354;
+}
+
+/* Optional: tweak slide titles alignment */
+.reveal .slides section h1,
+.reveal .slides section h2 {
+  text-transform: none;
+}

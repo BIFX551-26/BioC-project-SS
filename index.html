@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<script src="index_files/libs/clipboard/clipboard.min.js"></script>
+<script src="index_files/libs/quarto-html/tabby.min.js"></script>
+<script src="index_files/libs/quarto-html/popper.min.js"></script>
+<script src="index_files/libs/quarto-html/tippy.umd.min.js"></script>
+<link href="index_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="index_files/libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="index_files/libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles"><meta charset="utf-8">
+  <meta name="generator" content="quarto-1.8.27">
+
+  <meta name="author" content="Saifun Nahar, Arman Moshasha, Suleman Mohammad">
+  <meta name="dcterms.date" content="2026-05-09">
+  <title>Comparing scRNA-seq Protocols with Bioconductor simpleSingleCell wokflow</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+  <link rel="stylesheet" href="index_files/libs/revealjs/dist/reset.css">
+  <link rel="stylesheet" href="index_files/libs/revealjs/dist/reveal.css">
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      { color: #003b4f; background-color: #f1f3f5; }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span { color: #003b4f; } /* Normal */
+    code span.al { color: #ad0000; } /* Alert */
+    code span.an { color: #5e5e5e; } /* Annotation */
+    code span.at { color: #657422; } /* Attribute */
+    code span.bn { color: #ad0000; } /* BaseN */
+    code span.bu { } /* BuiltIn */
+    code span.cf { color: #003b4f; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #20794d; } /* Char */
+    code span.cn { color: #8f5902; } /* Constant */
+    code span.co { color: #5e5e5e; } /* Comment */
+    code span.cv { color: #5e5e5e; font-style: italic; } /* CommentVar */
+    code span.do { color: #5e5e5e; font-style: italic; } /* Documentation */
+    code span.dt { color: #ad0000; } /* DataType */
+    code span.dv { color: #ad0000; } /* DecVal */
+    code span.er { color: #ad0000; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #ad0000; } /* Float */
+    code span.fu { color: #4758ab; } /* Function */
+    code span.im { color: #00769e; } /* Import */
+    code span.in { color: #5e5e5e; } /* Information */
+    code span.kw { color: #003b4f; font-weight: bold; } /* Keyword */
+    code span.op { color: #5e5e5e; } /* Operator */
+    code span.ot { color: #003b4f; } /* Other */
+    code span.pp { color: #ad0000; } /* Preprocessor */
+    code span.sc { color: #5e5e5e; } /* SpecialChar */
+    code span.ss { color: #20794d; } /* SpecialString */
+    code span.st { color: #20794d; } /* String */
+    code span.va { color: #111111; } /* Variable */
+    code span.vs { color: #20794d; } /* VerbatimString */
+    code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="index_files/libs/revealjs/dist/theme/quarto-b7b1f28077f0321454e2247f128f7176.css">
+  <link href="index_files/libs/revealjs/plugin/quarto-line-highlight/line-highlight.css" rel="stylesheet">
+  <link href="index_files/libs/revealjs/plugin/reveal-menu/menu.css" rel="stylesheet">
+  <link href="index_files/libs/revealjs/plugin/reveal-menu/quarto-menu.css" rel="stylesheet">
+  <link href="index_files/libs/revealjs/plugin/reveal-chalkboard/font-awesome/css/all.css" rel="stylesheet">
+  <link href="index_files/libs/revealjs/plugin/reveal-chalkboard/style.css" rel="stylesheet">
+  <link href="index_files/libs/revealjs/plugin/quarto-support/footer.css" rel="stylesheet">
+  <style type="text/css">
+    .reveal div.sourceCode {
+      margin: 0;
+      overflow: auto;
+    }
+    .reveal div.hanging-indent {
+      margin-left: 1em;
+      text-indent: -1em;
+    }
+    .reveal .slide:not(.center) {
+      height: 100%;
+    }
+    .reveal .slide.scrollable {
+      overflow-y: auto;
+    }
+    .reveal .footnotes {
+      height: 100%;
+      overflow-y: auto;
+    }
+    .reveal .slide .absolute {
+      position: absolute;
+      display: block;
+    }
+    .reveal .footnotes ol {
+      counter-reset: ol;
+      list-style-type: none; 
+      margin-left: 0;
+    }
+    .reveal .footnotes ol li:before {
+      counter-increment: ol;
+      content: counter(ol) ". "; 
+    }
+    .reveal .footnotes ol li > p:first-child {
+      display: inline-block;
+    }
+    .reveal .slide ul,
+    .reveal .slide ol {
+      margin-bottom: 0.5em;
+    }
+    .reveal .slide ul li,
+    .reveal .slide ol li {
+      margin-top: 0.4em;
+      margin-bottom: 0.2em;
+    }
+    .reveal .slide ul[role="tablist"] li {
+      margin-bottom: 0;
+    }
+    .reveal .slide ul li > *:first-child,
+    .reveal .slide ol li > *:first-child {
+      margin-block-start: 0;
+    }
+    .reveal .slide ul li > *:last-child,
+    .reveal .slide ol li > *:last-child {
+      margin-block-end: 0;
+    }
+    .reveal .slide .columns:nth-child(3) {
+      margin-block-start: 0.8em;
+    }
+    .reveal blockquote {
+      box-shadow: none;
+    }
+    .reveal .tippy-content>* {
+      margin-top: 0.2em;
+      margin-bottom: 0.7em;
+    }
+    .reveal .tippy-content>*:last-child {
+      margin-bottom: 0.2em;
+    }
+    .reveal .slide > img.stretch.quarto-figure-center,
+    .reveal .slide > img.r-stretch.quarto-figure-center {
+      display: block;
+      margin-left: auto;
+      margin-right: auto; 
+    }
+    .reveal .slide > img.stretch.quarto-figure-left,
+    .reveal .slide > img.r-stretch.quarto-figure-left  {
+      display: block;
+      margin-left: 0;
+      margin-right: auto; 
+    }
+    .reveal .slide > img.stretch.quarto-figure-right,
+    .reveal .slide > img.r-stretch.quarto-figure-right  {
+      display: block;
+      margin-left: auto;
+      margin-right: 0; 
+    }
+  </style>
+</head>
+<body class="quarto-light">
+  <div class="reveal">
+    <div class="slides">
+
+<section id="title-slide" class="quarto-title-block center">
+  <h1 class="title">Comparing scRNA-seq Protocols with Bioconductor simpleSingleCell wokflow</h1>
+  <p class="subtitle">Paul HSC (MARS-seq), Bach Mammary (10x), Messmer ESC (Smart-seq2)</p>
+
+<div class="quarto-title-authors">
+<div class="quarto-title-author">
+<div class="quarto-title-author-name">
+Saifun Nahar, Arman Moshasha, Suleman Mohammad 
+</div>
+</div>
+</div>
+
+  <p class="date">2026-05-09</p>
+</section>
+<section>
+<section id="bioconductor-simplesinglecell-protocol-for-scrna-seq" class="title-slide slide level1 center">
+<h1>Bioconductor <code>simpleSingleCell</code> protocol for scRNA-seq</h1>
+
+</section>
+<section id="what-is-simplesinglecell" class="slide level2">
+<h2>What is <code>simpleSingleCell</code>?</h2>
+<ul>
+<li>A family of Bioconductor <strong>workflows</strong> for low-level scRNA‑seq analysis by <a href="https://doi.org/doi:10.18129/B9.bioc.simpleSingleCell">Lun, McCarthy &amp; Marioni (2016)</a>.</li>
+<li>Implemented entirely in R/Bioconductor around the <strong>SingleCellExperiment</strong> container.</li>
+<li>Now archived; content lives at <a href="https://osca.bioconductor.org">OSCA</a></li>
+<li>Covers: QC → normalization → HVG selection → dimensionality reduction → clustering → marker genes.</li>
+</ul>
+<div class="callout callout-note no-icon callout-titled callout-style-default">
+<div class="callout-body">
+<div class="callout-title">
+<p><strong>Installation:</strong></p>
+</div>
+<div class="callout-content">
+<p>To install this package, start R (version “4.6”) and enter:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href=""></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">require</span>(<span class="st">"BiocManager"</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb1-2"><a href=""></a>    <span class="fu">install.packages</span>(<span class="st">"BiocManager"</span>)</span>
+<span id="cb1-3"><a href=""></a></span>
+<span id="cb1-4"><a href=""></a>BiocManager<span class="sc">::</span><span class="fu">install</span>(<span class="st">"simpleSingleCell"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<h5 id="documentation">Documentation</h5>
+<p>To view documentation for the version of this package installed in your system, start R and enter:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href=""></a><span class="fu">browseVignettes</span>(<span class="st">"simpleSingleCell"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+<div class="callout callout-note no-icon callout-titled callout-style-default">
+<div class="callout-body">
+<div class="callout-title">
+<p><strong>Note</strong></p>
+</div>
+<div class="callout-content">
+<p>Key packages used throughout:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href=""></a><span class="fu">suppressPackageStartupMessages</span>({</span>
+<span id="cb3-2"><a href=""></a>  <span class="fu">library</span>(scRNAseq)</span>
+<span id="cb3-3"><a href=""></a>  <span class="fu">library</span>(SingleCellExperiment)</span>
+<span id="cb3-4"><a href=""></a>  <span class="fu">library</span>(scater)</span>
+<span id="cb3-5"><a href=""></a>  <span class="fu">library</span>(scran)</span>
+<span id="cb3-6"><a href=""></a>  <span class="fu">library</span>(scuttle)</span>
+<span id="cb3-7"><a href=""></a>  <span class="fu">library</span>(batchelor)</span>
+<span id="cb3-8"><a href=""></a>  <span class="fu">library</span>(AnnotationHub)</span>
+<span id="cb3-9"><a href=""></a>  <span class="fu">library</span>(ggplot2)</span>
+<span id="cb3-10"><a href=""></a>  <span class="fu">library</span>(igraph)</span>
+<span id="cb3-11"><a href=""></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+</section>
+<section id="objective" class="slide level2">
+<h2>Objective</h2>
+<h3 id="from-reads-to-a-count-matrix">From reads to a count matrix</h3>
+<ul>
+<li>Single-cell RNA sequencing (scRNA-seq) is widely used to profile the transcriptome of individual cells.</li>
+<li>Single-cell RNA-seq starts as millions of sequencing reads that must be summarized into a <strong>gene × cell expression matrix</strong>.<br>
+</li>
+<li>Typically, each <strong>row</strong> is a gene and each <strong>column</strong> is a cell; entries are the number of reads or UMIs assigned to that gene in that cell.<br>
+</li>
+<li><strong>UMI counts</strong> are treated like read counts but are less affected by PCR amplification, giving a cleaner measure of the number of captured molecules.<br>
+</li>
+<li>Once this quantification is done, all downstream QC, normalization, and analysis in R/Bioconductor operate on this count matrix.</li>
+</ul>
+
+<img data-src="images/paste-1.png" width="612" class="r-stretch quarto-figure-center"><p class="caption">Fig 1: Schematic of a typical scRNA-seq analysis workflow. Each stage (separated by dashed lines) consists of a number of specific steps, many of which operate on and modify a SingleCellExperiment instance.</p></section>
+<section id="protocols-for-3dataset---simplesinglecell-workflow-pipeline" class="slide level2">
+<h2>3Protocols for 3Dataset - ‘simpleSingleCell’ workflow pipeline</h2>
+<h3 id="protocols-sc-rna-analysis-following-count-matrix."><u>3 Protocol’s : sc-RNA Analysis following count matrix.</u></h3>
+<p>Constructing the count matrix depends strongly on the experimental protocol:</p>
+<p><u>1. Droplet-based protocols</u></p>
+<ul>
+<li><p>Examples: 10X Genomics, inDrop, Drop-seq.</p></li>
+<li><p>Many cells, 3′ UMI counts, shallow coverage per cell.</p></li>
+</ul>
+<ol start="2" type="1">
+<li><u>Plate-based protocols with UMIs</u></li>
+</ol>
+<ul>
+<li><p>Examples: CEL‑seq2, MARS‑seq.</p></li>
+<li><p>Fewer cells, UMI counts, deeper coverage per cell.</p></li>
+</ul>
+<p><u>3. Plate-based protocols with full-length reads</u></p>
+<ul>
+<li><p>Examples: Smart‑seq2, sciRNA‑seq.</p></li>
+<li><p>High coverage per cell, non-UMI read counts.</p></li>
+</ul>
+<h3 id="dataset-using-simplesinglecell-workflow-pipeline"><u>3-Dataset using ‘simpleSingleCell’ workflow pipeline:</u></h3>
+<p>Goal: Comparing three scRNA‑seq protocols and biological systems using a common Bioconductor workflow ’simpleSingleCell`.</p>
+<p>In this project we analyze one dataset from each category</p>
+<p>Datasets &amp; questions:</p>
+<ol type="1">
+<li><strong>Paul et al.&nbsp;Mouse HSCs Measured with (MARS‑seq)</strong> - (Plate + UMI).</li>
+</ol>
+<ul>
+<li>Mouse haematopoietic stem &amp; progenitor hierarchy.</li>
+<li>Question: how does transcription change along the myeloid–erythroid differentiation trajectory?</li>
+</ul>
+<ol start="2" type="1">
+<li><strong>Bach et al.&nbsp;Mouse mammary Epithelial cells with (10X Genomics)</strong> - (Droplet + UMI)</li>
+</ol>
+<ul>
+<li><p>Mouse mammary epithelium and microenvironment.</p></li>
+<li><p>Question: what cell types and states are present in the mammary gland during gestation?</p></li>
+</ul>
+<ol start="3" type="1">
+<li><strong>Messmer et al.&nbsp;Human hESC with (Smart‑seq2)</strong> - (Plate + Reads full-length)</li>
+</ol>
+<ul>
+<li><p>Human embryonic stem cells, naive and primed states plus early differentiation.</p></li>
+<li><p>Question: how heterogeneous are naive/primed hESCs and early lineages at single‑cell resolution?</p></li>
+</ul>
+<p>All three are analyzed with an <strong>OSCA/simpleSingleCell-style pipeline</strong>.</p>
+</section>
+<section id="workflow-overview" class="slide level2">
+<h2>Workflow overview</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb4-1"><a href=""></a>Raw counts (protocol-specific)</span>
+<span id="cb4-2"><a href=""></a>        ↓</span>
+<span id="cb4-3"><a href=""></a>   Quality Control       ← remove low-quality cells &amp; outliers</span>
+<span id="cb4-4"><a href=""></a>        ↓</span>
+<span id="cb4-5"><a href=""></a>   Normalization         ← scran deconvolution size factors + logNormCounts</span>
+<span id="cb4-6"><a href=""></a>        ↓</span>
+<span id="cb4-7"><a href=""></a>Variance Modelling       ← modelGeneVar(…)/modelGeneVarByPoisson/WithSpikes</span>
+<span id="cb4-8"><a href=""></a>        ↓</span>
+<span id="cb4-9"><a href=""></a>HVG Selection            ← choose genes with variance above technical trend</span>
+<span id="cb4-10"><a href=""></a>        ↓</span>
+<span id="cb4-11"><a href=""></a>Dimensional Reduction    ← PCA, t-SNE / UMAP</span>
+<span id="cb4-12"><a href=""></a>        ↓</span>
+<span id="cb4-13"><a href=""></a>Graph-based Clustering   ← SNN graph → Walktrap / Louvain</span>
+<span id="cb4-14"><a href=""></a>        ↓</span>
+<span id="cb4-15"><a href=""></a>Marker Gene Detection    ← findMarkers to define cluster identities</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Core idea: <strong>same pipeline</strong> across protocols, with protocol-specific tweaks.</p>
+</section>
+<section id="key-packages-how-we-did-it" class="slide level2">
+<h2>Key packages (How we did it)</h2>
+<table class="caption-top">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 66%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Package</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>SingleCellExperiment</code></td>
+<td>Core container for counts + metadata</td>
+</tr>
+<tr class="even">
+<td><code>scRNAseq</code></td>
+<td>Access Paul, Bach, Messmer datasets</td>
+</tr>
+<tr class="odd">
+<td><code>scater</code> &amp; <code>scuttle</code></td>
+<td>QC metrics, visualization, logNormCounts</td>
+</tr>
+<tr class="even">
+<td><code>scran</code></td>
+<td>Deconvolution normalization, HVGs, clustering</td>
+</tr>
+<tr class="odd">
+<td><code>batchelor</code></td>
+<td>Batch / covariate regression (Messmer)</td>
+</tr>
+<tr class="even">
+<td><code>AnnotationHub</code></td>
+<td>Gene annotation via EnsDb / Ensembl</td>
+</tr>
+<tr class="odd">
+<td><code>ggplot2</code></td>
+<td>Visualization</td>
+</tr>
+<tr class="even">
+<td><code>igraph</code></td>
+<td>SNN graph &amp; community detection</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="paul-mouse-hsc-marsseq" class="slide level2">
+<h2>1. Paul mouse HSC (MARS‑seq)</h2>
+<h3 id="data-protocol">1.1 Data &amp; protocol</h3>
+<ul>
+<li>Plate-based <strong>MARS‑seq UMI</strong> protocol</li>
+<li>It is a Low-throughput but high-depth protocol targeting Mouse Bone marrow Hematopoietic stem and progenitor cells under multiple treatments.</li>
+<li>Moderate numbers of cells per plate; UMI counts, shallow coverage per cell but good for trajectories.</li>
+</ul>
+<div class="callout callout-note no-icon callout-titled callout-style-default">
+<div class="callout-body">
+<div class="callout-title">
+<p><strong>Note</strong></p>
+</div>
+<div class="callout-content">
+<p><strong>Data loading:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href=""></a><span class="fu">library</span>(scRNAseq)</span>
+<span id="cb5-2"><a href=""></a>sce.paul <span class="ot">&lt;-</span> <span class="fu">PaulHSCData</span>(<span class="at">ensembl=</span><span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+<p><strong><em>Biological question :</em></strong></p>
+<pre><code>Q: How do Transcriptional programs change along the HSC → Myeloid/Erythroid differentiation trajectory?</code></pre>
+<h3 id="methods-what-how">Methods (what &amp; how)</h3>
+<h3 id="qcquality-control">1.2 QC(Quality Control):</h3>
+<ul>
+<li>Per-cell QC metrics: library size, detected genes; limited mitochondrial annotation.</li>
+<li>Plate-aware QC: Identified “bad” plates with unusually low thresholds, then recomputed QC excluding them.</li>
+</ul>
+<div class="callout callout-note no-icon callout-titled callout-style-default">
+<div class="callout-body">
+<div class="callout-title">
+<p><strong>Note</strong></p>
+</div>
+<div class="callout-content">
+<p><strong>QC:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href=""></a><span class="fu">library</span>(scater)</span>
+<span id="cb7-2"><a href=""></a>stats <span class="ot">&lt;-</span> <span class="fu">perCellQCMetrics</span>(sce.paul) </span>
+<span id="cb7-3"><a href=""></a>qc <span class="ot">&lt;-</span> <span class="fu">quickPerCellQC</span>(stats, <span class="at">batch=</span>sce.paul<span class="sc">$</span>Plate_ID)</span>
+<span id="cb7-4"><a href=""></a></span>
+<span id="cb7-5"><a href=""></a><span class="co"># Detecting batches with unusually low threshold values.</span></span>
+<span id="cb7-6"><a href=""></a>lib.thresholds <span class="ot">&lt;-</span> <span class="fu">attr</span>(qc<span class="sc">$</span>low_lib_size, <span class="st">"thresholds"</span>)[<span class="st">"lower"</span>,]</span>
+<span id="cb7-7"><a href=""></a>nfeat.thresholds <span class="ot">&lt;-</span> <span class="fu">attr</span>(qc<span class="sc">$</span>low_n_features, <span class="st">"thresholds"</span>)[<span class="st">"lower"</span>,]</span>
+<span id="cb7-8"><a href=""></a>ignore <span class="ot">&lt;-</span> <span class="fu">union</span>(<span class="fu">names</span>(lib.thresholds)[lib.thresholds <span class="sc">&lt;</span> <span class="dv">100</span>],</span>
+<span id="cb7-9"><a href=""></a>          <span class="fu">names</span>(nfeat.thresholds)[nfeat.thresholds <span class="sc">&lt;</span> <span class="dv">100</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-1.png" width="502"></p>
+<figcaption>Figure 1.1: Distribution of each QC metric across cells in the Paul HSC dataset. Each point repr</figcaption>
+</figure>
+</div>
+<h3 id="normalization-hvgs">1.3 Normalization &amp; HVGs:</h3>
+<ul>
+<li>Deconvolution size factors (<code>computeSumFactors</code>) and <code>logNormCounts</code>.</li>
+<li>Poisson-based mean–variance modeling (<code>modelGeneVarByPoisson</code>) → top ~10% HVGs.</li>
+</ul>
+<div class="callout callout-note no-icon callout-titled callout-style-default">
+<div class="callout-body">
+<div class="callout-title">
+<p><strong>Note</strong></p>
+</div>
+<div class="callout-content">
+<p><strong>Norm. &amp; Variance Mod.</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href=""></a><span class="do">## Normalization</span></span>
+<span id="cb8-2"><a href=""></a><span class="fu">library</span>(scran)</span>
+<span id="cb8-3"><a href=""></a><span class="fu">set.seed</span>(<span class="dv">101000110</span>)</span>
+<span id="cb8-4"><a href=""></a>clusters <span class="ot">&lt;-</span> <span class="fu">quickCluster</span>(sce.paul)</span>
+<span id="cb8-5"><a href=""></a>sce.paul <span class="ot">&lt;-</span> <span class="fu">computeSumFactors</span>(sce.paul, <span class="at">clusters=</span>clusters)</span>
+<span id="cb8-6"><a href=""></a>sce.paul <span class="ot">&lt;-</span> <span class="fu">logNormCounts</span>(sce.paul)</span>
+<span id="cb8-7"><a href=""></a></span>
+<span id="cb8-8"><a href=""></a><span class="do">## HVGs</span></span>
+<span id="cb8-9"><a href=""></a><span class="fu">set.seed</span>(<span class="dv">10010101</span>) </span>
+<span id="cb8-10"><a href=""></a>dec.paul <span class="ot">&lt;-</span> <span class="fu">modelGeneVarByPoisson</span>(sce.paul) </span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-2.png" width="470"></p>
+<figcaption>Figure 1.2: Relationship between the library size factors and the deconvolution size factors in the Paul HSC dataset.</figcaption>
+</figure>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-3.png" width="419"></p>
+<figcaption>Figure 1.3: Per-gene variance as a function of the mean for the log-expression values in the Paul HSC dataset. Each point represents a gene (black) with the mean-variance trend (blue) fitted to simulated Poisson noise.</figcaption>
+</figure>
+</div>
+<h3 id="dimensional-reduction-clustering">1.4 Dimensional reduction &amp; clustering:</h3>
+<ul>
+<li><code>denoisePCA</code> → t‑SNE on HVGs.<br>
+</li>
+<li>SNN graph (<code>buildSNNGraph</code>) + community detection (<code>cluster_louvain</code> / <code>cluster_walktrap</code>).</li>
+</ul>
+<div class="callout callout-note no-icon callout-titled callout-style-default">
+<div class="callout-body">
+<div class="callout-title">
+<p><strong>Note</strong></p>
+</div>
+<div class="callout-content">
+<p><strong>Dim. Red</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href=""></a><span class="do">## Dim. Reduction </span></span>
+<span id="cb9-2"><a href=""></a><span class="fu">set.seed</span>(<span class="dv">101010011</span>) </span>
+<span id="cb9-3"><a href=""></a>sce.paul <span class="ot">&lt;-</span> <span class="fu">denoisePCA</span>(sce.paul, <span class="at">technical=</span>dec.paul, <span class="at">subset.row=</span>top.paul) </span>
+<span id="cb9-4"><a href=""></a>sce.paul <span class="ot">&lt;-</span> <span class="fu">runTSNE</span>(sce.paul, <span class="at">dimred=</span><span class="st">"PCA"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Clustering</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href=""></a>snn.gr <span class="ot">&lt;-</span> <span class="fu">buildSNNGraph</span>(sce.paul, <span class="at">use.dimred=</span><span class="st">"PCA"</span>, <span class="at">type=</span><span class="st">"jaccard"</span>) </span>
+<span id="cb10-2"><a href=""></a><span class="fu">colLabels</span>(sce.paul) <span class="ot">&lt;-</span> <span class="fu">factor</span>(igraph<span class="sc">::</span><span class="fu">cluster_louvain</span>(snn.gr)<span class="sc">$</span>membership)</span>
+<span id="cb10-3"><a href=""></a></span>
+<span id="cb10-4"><a href=""></a><span class="fu">plotTSNE</span>(sce.paul, <span class="at">colour_by=</span><span class="st">"label"</span>, <span class="at">other_fields=</span><span class="st">"Batch_desc"</span>) <span class="sc">+</span>      </span>
+<span id="cb10-5"><a href=""></a>          <span class="fu">facet_wrap</span>(<span class="sc">~</span>Batch_desc)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-5.png" width="474"></p>
+<figcaption>Figure 1.4 : t -SNE plot of the Paul HSC dataset, where each point represents a cell and is colored according to the assigned cluster.</figcaption>
+</figure>
+</div>
+<h3 id="markers">1.5 Markers:</h3>
+<ul>
+<li><code>findMarkers</code> per cluster; interpret using known myeloid/erythroid markers.</li>
+</ul>
+<h3 id="results-what-we-learned">1.6 Results (what we learned):</h3>
+<ul>
+<li>QC removed cells with extremely low library sizes and detected genes, especially on problematic plates.</li>
+<li>Poisson-based HVG selection captured genes varying along lineage trajectories rather than pure noise.</li>
+<li>t‑SNE revealed <strong>gradient-like manifolds</strong> instead of perfectly discrete clusters, reflecting continuous differentiation.</li>
+<li>Clusters corresponded to early HSCs vs more committed progenitors, with markers such as <em>Gata1</em>, <em>Mpo</em>, <em>Elane</em> distinguishing branches.</li>
+</ul>
+<p><strong>Take‑home:</strong> MARS‑seq is well-suited for mapping <em>continuous</em> differentiation trajectories when combined with careful plate-aware QC and Poisson variance modeling.</p>
+</section>
+<section id="bach-mouse-mammary-10x-genomics" class="slide level2">
+<h2>2. Bach Mouse mammary (10X Genomics)</h2>
+<h3 id="data-protocol-1">2.1 Data &amp; protocol</h3>
+<ul>
+<li>The Bach mouse mammary dataset profile mammary epithelial cells (and associated stromal/immune cells) using the High-throughput <strong>10X Genomics droplet-based 3′ UMI</strong> protocol scRNA‑seq.</li>
+<li>The goal is to chart the hierarchy of mammary epithelial lineages (basal, luminal progenitors, mature luminal) and their responses across developmental stages<br>
+</li>
+<li>Many Mouse mammary epithelial cells, plus stromal and immune cells from gestation - shallow coverage per cell.</li>
+</ul>
+<div class="callout callout-note no-icon callout-titled callout-style-default">
+<div class="callout-body">
+<div class="callout-title">
+<p><strong>Note</strong></p>
+</div>
+<div class="callout-content">
+<p><strong>Data Loading</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href=""></a><span class="fu">library</span>(scRNAseq) </span>
+<span id="cb11-2"><a href=""></a>sce.mam <span class="ot">&lt;-</span> <span class="fu">BachMammaryData</span>(<span class="at">samples=</span><span class="st">"G_1"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+<p><strong>Biological question</strong></p>
+<pre><code>Q: What epithelial subtypes and stromal/immune populations exist in the mammary gland during gestation? </code></pre>
+<h3 id="methods-what-how-1">Methods (what &amp; how)</h3>
+<h3 id="qc">2.2 QC</h3>
+<ul>
+<li>Per-cell metrics including library size, detected features, and mitochondrial percentage using <code>perCellQCMetrics</code>.<br>
+</li>
+<li><code>quickPerCellQC</code> used thresholds on library size, detected genes, and mitochondrial percent to discard low-quality cells.</li>
+</ul>
+<div class="callout callout-note no-icon callout-titled callout-style-default">
+<div class="callout-body">
+<div class="callout-title">
+<p><strong>Note</strong></p>
+</div>
+<div class="callout-content">
+<p><strong>QC</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href=""></a>is.mito <span class="ot">&lt;-</span> <span class="fu">rowData</span>(sce.mam)<span class="sc">$</span>SEQNAME <span class="sc">==</span> <span class="st">"MT"</span> </span>
+<span id="cb13-2"><a href=""></a>stats <span class="ot">&lt;-</span> <span class="fu">perCellQCMetrics</span>(sce.mam, <span class="at">subsets=</span><span class="fu">list</span>(<span class="at">Mito=</span><span class="fu">which</span>(is.mito))) </span>
+<span id="cb13-3"><a href=""></a>qc <span class="ot">&lt;-</span> <span class="fu">quickPerCellQC</span>(stats, <span class="at">percent_subsets=</span><span class="st">"subsets_Mito_percent"</span>) </span>
+<span id="cb13-4"><a href=""></a>sce.mam <span class="ot">&lt;-</span> sce.mam[,<span class="sc">!</span>qc<span class="sc">$</span>discard]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-7.png" width="528"></p>
+<figcaption>Figure 2.1: Distribution of each QC metric across cells in the Bach mammary gland dataset. Each point represents a cell and is colored according to whether that cell was discarded.</figcaption>
+</figure>
+</div>
+<h3 id="normalization-hvgs-1">2.3 Normalization &amp; HVGs:</h3>
+<ul>
+<li>Deconvolution size factors (<code>computeSumFactors</code>) and <code>logNormCounts</code>.</li>
+<li>Poisson-based variance modeling (<code>modelGeneVarByPoisson</code>) → top ~10% HVGs.</li>
+</ul>
+<div class="callout callout-note no-icon callout-titled callout-style-default">
+<div class="callout-body">
+<div class="callout-title">
+<p><strong>Note</strong></p>
+</div>
+<div class="callout-content">
+<p><strong>Norm</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href=""></a><span class="do">## Norm.</span></span>
+<span id="cb14-2"><a href=""></a><span class="fu">library</span>(scran) </span>
+<span id="cb14-3"><a href=""></a><span class="fu">set.seed</span>(<span class="dv">10100110</span>) </span>
+<span id="cb14-4"><a href=""></a>clusters <span class="ot">&lt;-</span> <span class="fu">quickCluster</span>(sce.mam) </span>
+<span id="cb14-5"><a href=""></a>sce.mam <span class="ot">&lt;-</span> <span class="fu">computeSumFactors</span>(sce.mam, <span class="at">clusters=</span>clusters) </span>
+<span id="cb14-6"><a href=""></a>sce.mam <span class="ot">&lt;-</span> <span class="fu">logNormCounts</span>(sce.mam)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>HVGs</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href=""></a><span class="fu">set.seed</span>(<span class="dv">100110</span>) </span>
+<span id="cb15-2"><a href=""></a>dec.mam <span class="ot">&lt;-</span> <span class="fu">modelGeneVarByPoisson</span>(sce.mam) </span>
+<span id="cb15-3"><a href=""></a>top.mam <span class="ot">&lt;-</span> <span class="fu">getTopHVGs</span>(dec.mam, <span class="at">prop=</span><span class="fl">0.1</span>)</span>
+<span id="cb15-4"><a href=""></a><span class="fu">plot</span>(dec.mam<span class="sc">$</span>mean, dec.mam<span class="sc">$</span>total, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">cex=</span><span class="fl">0.5</span>,     </span>
+<span id="cb15-5"><a href=""></a>    <span class="at">xlab=</span><span class="st">"Mean of log-expression"</span>, </span>
+<span id="cb15-6"><a href=""></a>    <span class="at">ylab=</span><span class="st">"Variance of log-expression"</span>) </span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+<pre><code>##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.  ##   0.264   0.520   0.752   1.000   1.207  10.790</code></pre>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-9.png" width="405"></p>
+<figcaption>Figure 2.2: Relationship between the library size factors and the deconvolution size factors in the Bach mammary gland dataset.</figcaption>
+</figure>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-10.png" width="424"></p>
+<figcaption>Figure 2.3: Per-gene variance as a function of the mean for the log-expression values in the ch mammary gland dataset. Each point represents a gene (black) with the mean-variance trend (blue) fitted to simulated Poisson counts.</figcaption>
+</figure>
+</div>
+<h3 id="dimensional-reduction-clustering-1">2.4 Dimensional reduction &amp; clustering:</h3>
+<ul>
+<li><code>denoisePCA</code> on HVGs, followed by t‑SNE.<br>
+</li>
+<li>SNN graph with higher k (e.g.&nbsp;k = 25) for coarser clusters; Walktrap clustering.</li>
+</ul>
+<div class="callout callout-note no-icon callout-titled callout-style-default">
+<div class="callout-body">
+<div class="callout-title">
+<p><strong>Note</strong></p>
+</div>
+<div class="callout-content">
+<p><strong>Dim Red</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href=""></a><span class="do">## Dim Red.</span></span>
+<span id="cb17-2"><a href=""></a><span class="fu">library</span>(BiocSingular) </span>
+<span id="cb17-3"><a href=""></a><span class="fu">set.seed</span>(<span class="dv">101010011</span>) </span>
+<span id="cb17-4"><a href=""></a>sce.mam <span class="ot">&lt;-</span> <span class="fu">denoisePCA</span>(sce.mam, <span class="at">technical=</span>dec.mam, <span class="at">subset.row=</span>top.mam) </span>
+<span id="cb17-5"><a href=""></a>sce.mam <span class="ot">&lt;-</span> <span class="fu">runTSNE</span>(sce.mam, <span class="at">dimred=</span><span class="st">"PCA"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>clustering</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href=""></a>snn.gr <span class="ot">&lt;-</span> <span class="fu">buildSNNGraph</span>(sce.mam, <span class="at">use.dimred=</span><span class="st">"PCA"</span>, <span class="at">k=</span><span class="dv">25</span>) </span>
+<span id="cb18-2"><a href=""></a><span class="fu">colLabels</span>(sce.mam) <span class="ot">&lt;-</span> <span class="fu">factor</span>(igraph<span class="sc">::</span><span class="fu">cluster_walktrap</span>(snn.gr)<span class="sc">$</span>membership)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-11.png" width="452"></p>
+<figcaption>Figure 2.4: Obligatory t -SNE plot of the Bach mammary gland dataset, where each point represents a cell and is colored according to the assigned cluster.</figcaption>
+</figure>
+</div>
+<h3 id="markers-1">2.5 Markers:</h3>
+<ul>
+<li><code>findMarkers</code> used to identify cell-type markers and annotate clusters as basal, luminal progenitors, mature luminal, fibroblasts, immune cells, etc.</li>
+</ul>
+<h3 id="bach-mammary-results-what-we-learned">2.6 Bach mammary – Results (what we learned)</h3>
+<ul>
+<li>QC effectively removed low-count, high-mito cells, visible as a low-count/high-mito tail in QC plots.</li>
+<li>Normalization and Poisson-based HVG detection highlighted genes with strong biological variance across mammary populations.<br>
+</li>
+<li>t‑SNE showed <strong>clearly separated clusters</strong>, unlike the gradient seen in Paul HSC:
+<ul>
+<li>Basal cells, luminal progenitors, mature luminal cells, stromal fibroblasts, and immune populations.</li>
+</ul></li>
+<li>Cluster markers matched canonical genes such as <em>Krt5</em> (basal), <em>Krt8/18</em> (luminal), <em>Esr1</em> (hormone-responsive), and immune markers.</li>
+</ul>
+<p><strong>Take‑home:</strong> 10X excels at mapping <strong>diverse discrete cell types</strong> in complex tissues, with standard QC and deconvolution normalization.</p>
+</section>
+<section id="messmer-hesc-smartseq2" class="slide level2">
+<h2>3. Messmer hESC (Smart‑seq2)</h2>
+<h3 id="data-protocol-2">3. 1 Data &amp; protocol</h3>
+<ul>
+<li>Plate-based <strong>Smart‑seq2 full-length</strong> protocol.<br>
+</li>
+<li>Human embryonic stem cells in naive and primed pluripotent states, plus early differentiation states.<br>
+</li>
+<li>Fewer cells but high read depth and sensitivity per cell.</li>
+</ul>
+<div class="callout callout-note no-icon callout-titled callout-style-default">
+<div class="callout-body">
+<div class="callout-title">
+<p><strong>Note</strong></p>
+</div>
+<div class="callout-content">
+<p><strong>Data Loading</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href=""></a><span class="do">## Dim Red.</span></span>
+<span id="cb19-2"><a href=""></a>{r}</span>
+<span id="cb19-3"><a href=""></a><span class="fu">library</span>(scRNAseq)</span>
+<span id="cb19-4"><a href=""></a>sce.mess <span class="ot">&lt;-</span> <span class="fu">MessmerESCData</span>()</span>
+<span id="cb19-5"><a href=""></a>sce.mess<span class="sc">$</span><span class="st">`</span><span class="at">experiment batch</span><span class="st">`</span> <span class="ot">&lt;-</span> <span class="fu">factor</span>(sce.mess<span class="sc">$</span><span class="st">`</span><span class="at">experiment batch</span><span class="st">`</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+<p><strong>Biological question</strong></p>
+<pre><code>Q: How heterogeneous are naive vs primed hESCs and early differentiation trajectories at the transcriptomic level?</code></pre>
+<h3 id="b-messmer-hesc-methods-what-how">3.B Messmer hESC – Methods (what &amp; how)</h3>
+<h3 id="qc-1">3.2 QC:</h3>
+<ul>
+<li>Per-cell library size, detected genes, mitochondrial percentage, and ERCC spike‑in percentages across experiment batches and phenotypes.</li>
+<li><code>quickPerCellQC</code> and related filters used to remove low-quality cells per batch.</li>
+</ul>
+<div class="callout callout-note no-icon callout-titled callout-style-default">
+<div class="callout-body">
+<div class="callout-title">
+<p><strong>Note</strong></p>
+</div>
+<div class="callout-content">
+<p><strong>QC</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href=""></a>sce.mess <span class="ot">&lt;-</span> <span class="fu">addPerCellQCMetrics</span>(sce.mess, </span>
+<span id="cb21-2"><a href=""></a>                                <span class="at">subsets=</span><span class="fu">list</span>(<span class="at">Mito=</span><span class="fu">grep</span>(<span class="st">"^MT-"</span>, </span>
+<span id="cb21-3"><a href=""></a>                                                  <span class="fu">rowData</span>(sce.mess)<span class="sc">$</span>SYMBOL)))</span>
+<span id="cb21-4"><a href=""></a></span>
+<span id="cb21-5"><a href=""></a><span class="co"># Define filtering thresholds and identify low-quality cells</span></span>
+<span id="cb21-6"><a href=""></a>qc.stats <span class="ot">&lt;-</span> <span class="fu">perCellQCMetrics</span>(sce.mess)</span>
+<span id="cb21-7"><a href=""></a>reasons <span class="ot">&lt;-</span> <span class="fu">perCellQCFilters</span>(sce.mess, </span>
+<span id="cb21-8"><a href=""></a>                            <span class="at">sub.fields=</span><span class="fu">c</span>(<span class="st">"subsets_Mito_percent"</span>, <span class="st">"altexps_ERCC_percent"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-12.png" width="450"></p>
+<figcaption>Figure 3.1: Distribution of QC metrics across batches (x-axis) and phenotypes (facets) for cells in the Messmer hESC dataset. Each point is a cell and is colored by whether it was discarded.</figcaption>
+</figure>
+</div>
+<h3 id="normalization-variance-modeling">3.3 Normalization &amp; variance modeling:</h3>
+<ul>
+<li>Deconvolution size factors (<code>computeSumFactors</code>) and logNormCounts.</li>
+<li>Spike‑in–aware variance modeling (<code>modelGeneVarWithSpikes</code>) with blocking by experiment batch to separate technical noise from biological variation.</li>
+</ul>
+<div class="callout callout-note no-icon callout-titled callout-style-default">
+<div class="callout-body">
+<div class="callout-title">
+<p><strong>Note</strong></p>
+</div>
+<div class="callout-content">
+<p><strong>NORM.</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href=""></a><span class="fu">library</span>(scran)</span>
+<span id="cb22-2"><a href=""></a></span>
+<span id="cb22-3"><a href=""></a><span class="fu">set.seed</span>(<span class="dv">10000</span>)</span>
+<span id="cb22-4"><a href=""></a>clusters <span class="ot">&lt;-</span> <span class="fu">quickCluster</span>(sce.mess)</span>
+<span id="cb22-5"><a href=""></a>sce.mess <span class="ot">&lt;-</span> <span class="fu">computeSumFactors</span>(sce.mess, <span class="at">cluster=</span>clusters)</span>
+<span id="cb22-6"><a href=""></a>sce.mess <span class="ot">&lt;-</span> <span class="fu">logNormCounts</span>(sce.mess)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-13.png" width="517"></p>
+<figcaption>Figure 3.2: Deconvolution size factors plotted against the library size (left) and spike-in size factors plotted against the deconvolution size factors (right). Each point is a cell and is colored by its phenotype.</figcaption>
+</figure>
+</div>
+<h3 id="cell-cycle-batch-correction">3.4 Cell cycle &amp; batch correction:</h3>
+<ul>
+<li>Cell cycle phase assignment using <code>cyclone</code> with human marker pairs.</li>
+<li>Regression-based correction (<code>correctExperiments</code> with RegressParam) including phenotype and batch covariates.</li>
+<li>Contrastive PCA and sparse cPCA (<code>scPCA</code>) using primed-only cells as background to reduce cell-cycle-driven variation.</li>
+</ul>
+<div class="callout callout-note no-icon callout-titled callout-style-default">
+<div class="callout-body">
+<div class="callout-title">
+<p><strong>Note</strong></p>
+</div>
+<div class="callout-content">
+<p><strong>C.C/B.C</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href=""></a>hs_pairs <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="fu">system.file</span>(<span class="st">"exdata"</span>, <span class="st">"human_cycle_markers.rds"</span>, <span class="at">package=</span><span class="st">"scran"</span>))</span>
+<span id="cb23-2"><a href=""></a>assigned <span class="ot">&lt;-</span> <span class="fu">cyclone</span>(sce.mess, <span class="at">pairs=</span>hs_pairs, </span>
+<span id="cb23-3"><a href=""></a>                    <span class="at">gene.names=</span><span class="fu">rownames</span>(sce.mess),</span>
+<span id="cb23-4"><a href=""></a>                    <span class="at">BPPARAM=</span>BiocParallel<span class="sc">::</span><span class="fu">MulticoreParam</span>(<span class="dv">10</span>))</span>
+<span id="cb23-5"><a href=""></a>sce.mess<span class="sc">$</span>phase <span class="ot">&lt;-</span> assigned<span class="sc">$</span>phases</span>
+<span id="cb23-6"><a href=""></a></span>
+<span id="cb23-7"><a href=""></a>dec <span class="ot">&lt;-</span> <span class="fu">modelGeneVarWithSpikes</span>(sce.mess, <span class="st">"ERCC"</span>, <span class="at">block =</span> sce.mess<span class="sc">$</span><span class="st">`</span><span class="at">experiment batch</span><span class="st">`</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-15.png" width="531"></p>
+<figcaption>Figure 3.3: Per-gene variance of the log-normalized expression values in the Messmer hESC dataset, plotted against the mean for each batch. Each point represents a gene with spike-ins shown in red and the fitted trend shown in blue.</figcaption>
+</figure>
+</div>
+<h3 id="dimensional-reduction-clustering-2">3.5 Dimensional reduction &amp; clustering:</h3>
+<ul>
+<li>PCA and t‑SNE on corrected HVG expression; SNN graph clustering; silhouette analysis with <code>bluster</code> to quantify phase separation.</li>
+</ul>
+<div class="callout callout-note no-icon callout-titled callout-style-default">
+<div class="callout-body">
+<div class="callout-title">
+<p><strong>Note</strong></p>
+</div>
+<div class="callout-content">
+<p><strong>DIM. RED</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href=""></a>sce.mess <span class="ot">&lt;-</span> <span class="fu">runPCA</span>(sce.mess, </span>
+<span id="cb24-2"><a href=""></a>                   <span class="at">subset_row =</span> top.hvgs, </span>
+<span id="cb24-3"><a href=""></a>                   <span class="at">exprs_values =</span> <span class="st">"corrected"</span>, </span>
+<span id="cb24-4"><a href=""></a>                   <span class="at">BSPARAM =</span> BiocSingular<span class="sc">::</span><span class="fu">IrlbaParam</span>())</span>
+<span id="cb24-5"><a href=""></a></span>
+<span id="cb24-6"><a href=""></a>sce.mess <span class="ot">&lt;-</span> <span class="fu">runTSNE</span>(sce.mess, <span class="at">dimred =</span> <span class="st">"PCA"</span>, <span class="at">perplexity =</span> <span class="dv">40</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Clustering</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href=""></a>gridExtra<span class="sc">::</span><span class="fu">grid.arrange</span>(</span>
+<span id="cb25-2"><a href=""></a>    <span class="fu">plotTSNE</span>(sce.mess, <span class="at">colour_by =</span> <span class="st">"phenotype"</span>) <span class="sc">+</span> <span class="fu">ggtitle</span>(<span class="st">"By phenotype"</span>),</span>
+<span id="cb25-3"><a href=""></a>    <span class="fu">plotTSNE</span>(sce.mess, <span class="at">colour_by =</span> <span class="st">"experiment batch"</span>) <span class="sc">+</span> <span class="fu">ggtitle</span>(<span class="st">"By batch "</span>),</span>
+<span id="cb25-4"><a href=""></a>    <span class="fu">plotTSNE</span>(sce.mess, <span class="at">colour_by =</span> <span class="st">"CDK1"</span>, <span class="at">swap_rownames=</span><span class="st">"SYMBOL"</span>) <span class="sc">+</span> <span class="fu">ggtitle</span>(<span class="st">"By CDK1"</span>),</span>
+<span id="cb25-5"><a href=""></a>    <span class="fu">plotTSNE</span>(sce.mess, <span class="at">colour_by =</span> <span class="st">"phase"</span>) <span class="sc">+</span> <span class="fu">ggtitle</span>(<span class="st">"By phase"</span>),</span>
+<span id="cb25-6"><a href=""></a>    <span class="at">ncol =</span> <span class="dv">2</span></span>
+<span id="cb25-7"><a href=""></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-16.png" width="670"></p>
+<figcaption>Figure 3.4: Obligatory t -SNE plots of the Messmer hESC dataset, where each point is a cell and is colored by various attributes.</figcaption>
+</figure>
+</div>
+<h3 id="messmer-hesc-results-what-we-learned">3.6 Messmer hESC – Results (what we learned)</h3>
+<ul>
+<li>QC combining mitochondrial and ERCC metrics removed low-quality cells evenly across batches and phenotypes.</li>
+<li>Spike‑in–aware variance modeling identified HVGs that separate naive and primed states instead of just capturing technical noise.</li>
+<li>Cell cycle was a major driver of variation in naive and primed cells; cPCA/scPCA reduced phase-based separation while maintaining naive vs primed structure, confirmed by reduced silhouette widths for phases.</li>
+<li>Clusters showed enrichment of pluripotency markers (<em>POU5F1/OCT4</em>, <em>NANOG</em>, <em>SOX2</em>) in pluripotent clusters and lineage markers in differentiating subsets.</li>
+</ul>
+<p><strong>Take‑home:</strong> Smart‑seq2 plus spike‑ins and cPCA allow fine-grained analysis of <strong>subtle pluripotent state differences and early lineage specification</strong>.</p>
+</section>
+<section id="cross-dataset-comparison-protocols-workflows" class="slide level2">
+<h2>Cross-dataset comparison: protocols &amp; workflows</h2>
+<table class="caption-top">
+<colgroup>
+<col style="width: 24%">
+<col style="width: 24%">
+<col style="width: 24%">
+<col style="width: 26%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Aspect</th>
+<th>Paul HSC (MARS‑seq)</th>
+<th>Bach mammary (10X)</th>
+<th>Messmer hESC (Smart‑seq2)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Protocol</td>
+<td>Plate-based UMI</td>
+<td>Droplet-based 3′ UMI</td>
+<td>Plate-based full-length</td>
+</tr>
+<tr class="even">
+<td>Organism / system</td>
+<td>Mouse HSC &amp; progenitors</td>
+<td>Mouse mammary + stroma</td>
+<td>Human ESCs &amp; early lineages</td>
+</tr>
+<tr class="odd">
+<td>QC focus</td>
+<td>Plate-aware thresholds</td>
+<td>Library + mito filters</td>
+<td>Library, mito, ERCC, batches</td>
+</tr>
+<tr class="even">
+<td>Variance modeling</td>
+<td>Poisson trend</td>
+<td>Poisson trend</td>
+<td>Spike‑in + batch-aware trend</td>
+</tr>
+<tr class="odd">
+<td>Main structure</td>
+<td>Gradient trajectories</td>
+<td>Discrete cell types</td>
+<td>Pluripotent vs differentiating states</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="challenges" class="slide level2">
+<h2>Challenges</h2>
+<ul>
+<li>Managing Bioconductor data packages on a very recent R/Bioconductor release (AnnotationHub, scRNAseq, HCAData) required extra care.</li>
+</ul>
+<p>-Namespace conflicts ex: dplyr’s <code>select()</code> vs AnnotationDbi’s <code>select()</code> for EnsDb objects; solved by using <code>AnnotationDbi::select()</code>.</p>
+<ul>
+<li>Protocol-specific design quirks especially Plate issues in Paul HSC, high mitochondrial tails in Bach 10X, strong cell cycle signals in Messmer hESC.</li>
+</ul>
+<p>-Interpretation of graphs was a challenge mainly Continuous gradients (Paul) vs discrete clusters (Bach, Messmer) require different visualization and annotation strategies.</p>
+</section>
+<section id="lessons-learned" class="slide level2">
+<h2>Lessons learned</h2>
+<ul>
+<li>Installing Bioconductor dependencies with compatible versions</li>
+<li>Matching gene symbols to Ensembl IDs for the <code>cyclone</code> classifier</li>
+<li>Choosing appropriate QC thresholds — MAD-based thresholds adapt to the data but require biological judgment</li>
+<li>t-SNE is stochastic — set a seed for reproducibility</li>
+</ul>
+</section>
+<section id="conclusion" class="slide level2">
+<h2>Conclusion</h2>
+<p>Using a common Bioconductor single-cell workflow, it is possible to analyze and interpret diverse single-cell datasets—ranging from hematopoietic progenitors to mammary gland tissue to embryonic stem cells—by adapting a few key steps to the underlying protocol and biological context. For each dataset: • Paul HSC illustrates how scRNA‑seq can reconstruct continuous differentiation manifolds and identify progenitor hierarchy. • Bach mammary shows how high-throughput droplet data reveal multiple discrete cell populations and tissue organization. • Messmer ESC demonstrates how plate-based full-length protocols enable detailed characterization of pluripotent and early differentiation states. The step-by-step workflow (QC, normalization, HVGs, DR, clustering, marker analysis) is conceptually identical across all three, while protocol-specific choices (e.g., normalization strategy) and interpretation focus differ.</p>
+</section>
+<section id="attribution" class="slide level2">
+<h2>Attribution</h2>
+<p>This project is based on the <strong>simpleSingleCell</strong> Bioconductor workflow:</p>
+<blockquote>
+<p>Lun ATL, McCarthy DJ, Marioni JC (2016). <em>A step-by-step workflow for low-level analysis of single-cell RNA-seq data with Bioconductor.</em> F1000Research 5:2122. <a href="https://doi.org/10.12688/f1000research.9501.2" class="uri">https://doi.org/10.12688/f1000research.9501.2</a></p>
+</blockquote>
+<p>Dataset: Wilson et al.&nbsp;(2015), GSE61533. Updated OSCA book: <a href="https://osca.bioconductor.org" class="uri">https://osca.bioconductor.org</a></p>
+
+</section></section>
+    </div>
+  <div class="quarto-auto-generated-content" style="display: none;">
+<div class="footer footer-default">
+<p>OSCA/simpleSingleCell workflows</p>
+</div>
+</div></div>
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script>
+  <script src="index_files/libs/revealjs/dist/reveal.js"></script>
+  <!-- reveal.js plugins -->
+  <script src="index_files/libs/revealjs/plugin/quarto-line-highlight/line-highlight.js"></script>
+  <script src="index_files/libs/revealjs/plugin/pdf-export/pdfexport.js"></script>
+  <script src="index_files/libs/revealjs/plugin/reveal-menu/menu.js"></script>
+  <script src="index_files/libs/revealjs/plugin/reveal-menu/quarto-menu.js"></script>
+  <script src="index_files/libs/revealjs/plugin/reveal-chalkboard/plugin.js"></script>
+  <script src="index_files/libs/revealjs/plugin/quarto-support/support.js"></script>
+  
+
+  <script src="index_files/libs/revealjs/plugin/notes/notes.js"></script>
+  <script src="index_files/libs/revealjs/plugin/search/search.js"></script>
+  <script src="index_files/libs/revealjs/plugin/zoom/zoom.js"></script>
+  <script src="index_files/libs/revealjs/plugin/math/math.js"></script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script>
+
+  <script>
+
+      // Full list of configuration options available at:
+      // https://revealjs.com/config/
+      Reveal.initialize({
+'controlsAuto': true,
+'previewLinksAuto': false,
+'pdfSeparateFragments': false,
+'autoAnimateEasing': "ease",
+'autoAnimateDuration': 1,
+'autoAnimateUnmatched': true,
+'jumpToSlide': true,
+'menu': {"side":"left","useTextContentForMissingTitles":true,"markers":false,"loadIcons":false,"custom":[{"title":"Tools","icon":"<i class=\"fas fa-gear\"></i>","content":"<ul class=\"slide-menu-items\">\n<li class=\"slide-tool-item active\" data-item=\"0\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.fullscreen(event)\"><kbd>f</kbd> Fullscreen</a></li>\n<li class=\"slide-tool-item\" data-item=\"1\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.speakerMode(event)\"><kbd>s</kbd> Speaker View</a></li>\n<li class=\"slide-tool-item\" data-item=\"2\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.overview(event)\"><kbd>o</kbd> Slide Overview</a></li>\n<li class=\"slide-tool-item\" data-item=\"3\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.togglePdfExport(event)\"><kbd>e</kbd> PDF Export Mode</a></li>\n<li class=\"slide-tool-item\" data-item=\"4\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.toggleScrollView(event)\"><kbd>r</kbd> Scroll View Mode</a></li>\n<li class=\"slide-tool-item\" data-item=\"5\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.toggleChalkboard(event)\"><kbd>b</kbd> Toggle Chalkboard</a></li>\n<li class=\"slide-tool-item\" data-item=\"6\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.toggleNotesCanvas(event)\"><kbd>c</kbd> Toggle Notes Canvas</a></li>\n<li class=\"slide-tool-item\" data-item=\"7\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.downloadDrawings(event)\"><kbd>d</kbd> Download Drawings</a></li>\n<li class=\"slide-tool-item\" data-item=\"8\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.keyboardHelp(event)\"><kbd>?</kbd> Keyboard Help</a></li>\n</ul>"}],"openButton":true},
+'chalkboard': {"buttons":true},
+'smaller': false,
+ 
+        // Display controls in the bottom right corner
+        controls: false,
+
+        // Help the user learn the controls by providing hints, for example by
+        // bouncing the down arrow when they first encounter a vertical slide
+        controlsTutorial: false,
+
+        // Determines where controls appear, "edges" or "bottom-right"
+        controlsLayout: 'edges',
+
+        // Visibility rule for backwards navigation arrows; "faded", "hidden"
+        // or "visible"
+        controlsBackArrows: 'faded',
+
+        // Display a presentation progress bar
+        progress: true,
+
+        // Display the page number of the current slide
+        slideNumber: 'c/t',
+
+        // 'all', 'print', or 'speaker'
+        showSlideNumber: 'all',
+
+        // Add the current slide number to the URL hash so that reloading the
+        // page/copying the URL will return you to the same slide
+        hash: true,
+
+        // Start with 1 for the hash rather than 0
+        hashOneBasedIndex: false,
+
+        // Flags if we should monitor the hash and change slides accordingly
+        respondToHashChanges: true,
+
+        // Push each slide change to the browser history
+        history: true,
+
+        // Enable keyboard shortcuts for navigation
+        keyboard: true,
+
+        // Enable the slide overview mode
+        overview: true,
+
+        // Disables the default reveal.js slide layout (scaling and centering)
+        // so that you can use custom CSS layout
+        disableLayout: false,
+
+        // Vertical centering of slides
+        center: false,
+
+        // Enables touch navigation on devices with touch input
+        touch: true,
+
+        // Loop the presentation
+        loop: false,
+
+        // Change the presentation direction to be RTL
+        rtl: false,
+
+        // see https://revealjs.com/vertical-slides/#navigation-mode
+        navigationMode: 'linear',
+
+        // Randomizes the order of slides each time the presentation loads
+        shuffle: false,
+
+        // Turns fragments on and off globally
+        fragments: true,
+
+        // Flags whether to include the current fragment in the URL,
+        // so that reloading brings you to the same fragment position
+        fragmentInURL: false,
+
+        // Flags if the presentation is running in an embedded mode,
+        // i.e. contained within a limited portion of the screen
+        embedded: false,
+
+        // Flags if we should show a help overlay when the questionmark
+        // key is pressed
+        help: true,
+
+        // Flags if it should be possible to pause the presentation (blackout)
+        pause: true,
+
+        // Flags if speaker notes should be visible to all viewers
+        showNotes: false,
+
+        // Global override for autoplaying embedded media (null/true/false)
+        autoPlayMedia: null,
+
+        // Global override for preloading lazy-loaded iframes (null/true/false)
+        preloadIframes: null,
+
+        // Number of milliseconds between automatically proceeding to the
+        // next slide, disabled when set to 0, this value can be overwritten
+        // by using a data-autoslide attribute on your slides
+        autoSlide: 0,
+
+        // Stop auto-sliding after user input
+        autoSlideStoppable: true,
+
+        // Use this method for navigation when auto-sliding
+        autoSlideMethod: null,
+
+        // Specify the average time in seconds that you think you will spend
+        // presenting each slide. This is used to show a pacing timer in the
+        // speaker view
+        defaultTiming: null,
+
+        // Enable slide navigation via mouse wheel
+        mouseWheel: false,
+
+        // The display mode that will be used to show slides
+        display: 'block',
+
+        // Hide cursor if inactive
+        hideInactiveCursor: true,
+
+        // Time before the cursor is hidden (in ms)
+        hideCursorTime: 5000,
+
+        // Opens links in an iframe preview overlay
+        previewLinks: false,
+
+        // Transition style (none/fade/slide/convex/concave/zoom)
+        transition: 'none',
+
+        // Transition speed (default/fast/slow)
+        transitionSpeed: 'default',
+
+        // Transition style for full page slide backgrounds
+        // (none/fade/slide/convex/concave/zoom)
+        backgroundTransition: 'none',
+
+        // Number of slides away from the current that are visible
+        viewDistance: 3,
+
+        // Number of slides away from the current that are visible on mobile
+        // devices. It is advisable to set this to a lower number than
+        // viewDistance in order to save resources.
+        mobileViewDistance: 2,
+
+        // The "normal" size of the presentation, aspect ratio will be preserved
+        // when the presentation is scaled to fit different resolutions. Can be
+        // specified using percentage units.
+        width: 1050,
+
+        height: 700,
+
+        // Factor of the display size that should remain empty around the content
+        margin: 0.1,
+
+        math: {
+          mathjax: 'https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js',
+          config: 'TeX-AMS_HTML-full',
+          tex2jax: {
+            inlineMath: [['\\(','\\)']],
+            displayMath: [['\\[','\\]']],
+            balanceBraces: true,
+            processEscapes: false,
+            processRefs: true,
+            processEnvironments: true,
+            preview: 'TeX',
+            skipTags: ['script','noscript','style','textarea','pre','code'],
+            ignoreClass: 'tex2jax_ignore',
+            processClass: 'tex2jax_process'
+          },
+        },
+
+        // reveal.js plugins
+        plugins: [QuartoLineHighlight, PdfExport, RevealMenu, RevealChalkboard, QuartoSupport,
+
+          RevealMath,
+          RevealNotes,
+          RevealSearch,
+          RevealZoom
+        ]
+      });
+    </script>
+    <script id="quarto-html-after-body" type="application/javascript">
+      window.document.addEventListener("DOMContentLoaded", function (event) {
+        const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+        tabsets.forEach(function(tabset) {
+          const tabby = new Tabby('#' + tabset.id);
+        });
+        const isCodeAnnotation = (el) => {
+          for (const clz of el.classList) {
+            if (clz.startsWith('code-annotation-')) {                     
+              return true;
+            }
+          }
+          return false;
+        }
+        const onCopySuccess = function(e) {
+          // button target
+          const button = e.trigger;
+          // don't keep focus
+          button.blur();
+          // flash "checked"
+          button.classList.add('code-copy-button-checked');
+          var currentTitle = button.getAttribute("title");
+          button.setAttribute("title", "Copied!");
+          let tooltip;
+          if (window.bootstrap) {
+            button.setAttribute("data-bs-toggle", "tooltip");
+            button.setAttribute("data-bs-placement", "left");
+            button.setAttribute("data-bs-title", "Copied!");
+            tooltip = new bootstrap.Tooltip(button, 
+              { trigger: "manual", 
+                customClass: "code-copy-button-tooltip",
+                offset: [0, -8]});
+            tooltip.show();    
+          }
+          setTimeout(function() {
+            if (tooltip) {
+              tooltip.hide();
+              button.removeAttribute("data-bs-title");
+              button.removeAttribute("data-bs-toggle");
+              button.removeAttribute("data-bs-placement");
+            }
+            button.setAttribute("title", currentTitle);
+            button.classList.remove('code-copy-button-checked');
+          }, 1000);
+          // clear code selection
+          e.clearSelection();
+        }
+        const getTextToCopy = function(trigger) {
+          const outerScaffold = trigger.parentElement.cloneNode(true);
+          const codeEl = outerScaffold.querySelector('code');
+          for (const childEl of codeEl.children) {
+            if (isCodeAnnotation(childEl)) {
+              childEl.remove();
+            }
+          }
+          return codeEl.innerText;
+        }
+        const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+          text: getTextToCopy
+        });
+        clipboard.on('success', onCopySuccess);
+        if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+          const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+            text: getTextToCopy,
+            container: window.document.getElementById('quarto-embedded-source-code-modal')
+          });
+          clipboardModal.on('success', onCopySuccess);
+        }
+          var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+          var mailtoRegex = new RegExp(/^mailto:/);
+            var filterRegex = new RegExp('/' + window.location.host + '/');
+          var isInternal = (href) => {
+              return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+          }
+          // Inspect non-navigation links and adorn them if external
+         var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+          for (var i=0; i<links.length; i++) {
+            const link = links[i];
+            if (!isInternal(link.href)) {
+              // undo the damage that might have been done by quarto-nav.js in the case of
+              // links that we want to consider external
+              if (link.dataset.originalHref !== undefined) {
+                link.href = link.dataset.originalHref;
+              }
+            }
+          }
+        function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+          const config = {
+            allowHTML: true,
+            maxWidth: 500,
+            delay: 100,
+            arrow: false,
+            appendTo: function(el) {
+                return el.closest('section.slide') || el.parentElement;
+            },
+            interactive: true,
+            interactiveBorder: 10,
+            theme: 'light-border',
+            placement: 'bottom-start',
+          };
+          if (contentFn) {
+            config.content = contentFn;
+          }
+          if (onTriggerFn) {
+            config.onTrigger = onTriggerFn;
+          }
+          if (onUntriggerFn) {
+            config.onUntrigger = onUntriggerFn;
+          }
+            config['offset'] = [0,0];
+            config['maxWidth'] = 700;
+          window.tippy(el, config); 
+        }
+        const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+        for (var i=0; i<noterefs.length; i++) {
+          const ref = noterefs[i];
+          tippyHover(ref, function() {
+            // use id or data attribute instead here
+            let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+            try { href = new URL(href).hash; } catch {}
+            const id = href.replace(/^#\/?/, "");
+            const note = window.document.getElementById(id);
+            if (note) {
+              return note.innerHTML;
+            } else {
+              return "";
+            }
+          });
+        }
+        const findCites = (el) => {
+          const parentEl = el.parentElement;
+          if (parentEl) {
+            const cites = parentEl.dataset.cites;
+            if (cites) {
+              return {
+                el,
+                cites: cites.split(' ')
+              };
+            } else {
+              return findCites(el.parentElement)
+            }
+          } else {
+            return undefined;
+          }
+        };
+        var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+        for (var i=0; i<bibliorefs.length; i++) {
+          const ref = bibliorefs[i];
+          const citeInfo = findCites(ref);
+          if (citeInfo) {
+            tippyHover(citeInfo.el, function() {
+              var popup = window.document.createElement('div');
+              citeInfo.cites.forEach(function(cite) {
+                var citeDiv = window.document.createElement('div');
+                citeDiv.classList.add('hanging-indent');
+                citeDiv.classList.add('csl-entry');
+                var biblioDiv = window.document.getElementById('ref-' + cite);
+                if (biblioDiv) {
+                  citeDiv.innerHTML = biblioDiv.innerHTML;
+                }
+                popup.appendChild(citeDiv);
+              });
+              return popup.innerHTML;
+            });
+          }
+        }
+      });
+      </script>
+    
+
+</body></html>

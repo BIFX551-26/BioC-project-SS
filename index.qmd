@@ -1,0 +1,570 @@
+---
+title: "Comparing scRNA-seq Protocols with Bioconductor simpleSingleCell wokflow"
+subtitle: "Paul HSC (MARS-seq), Bach Mammary (10x), Messmer ESC (Smart-seq2)"
+author: "Saifun Nahar, Arman Moshasha, Suleman Mohammad"
+date: 05/09/2026
+format:
+  revealjs:
+    theme: [simple, bio-theme.scss]
+    slide-number: true
+    chalkboard: true
+    footer: "OSCA/simpleSingleCell workflows"
+  gfm: default
+execute:
+  warning: false
+  message: false
+  echo: true
+  error: true
+---
+
+# Bioconductor `simpleSingleCell` protocol for scRNA-seq
+
+## What is `simpleSingleCell`?
+
+-   A family of Bioconductor **workflows** for low-level scRNA‑seq analysis by [Lun, McCarthy & Marioni (2016)](https://doi.org/doi:10.18129/B9.bioc.simpleSingleCell).
+-   Implemented entirely in R/Bioconductor around the **SingleCellExperiment** container.
+-   Now archived; content lives at [OSCA](https://osca.bioconductor.org)
+-   Covers: QC → normalization → HVG selection → dimensionality reduction → clustering → marker genes.
+
+::: {.callout-note icon="false"}
+##### Installation:
+
+To install this package, start R (version "4.6") and enter:
+
+``` r
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("simpleSingleCell")
+```
+
+##### Documentation
+
+To view documentation for the version of this package installed in your system, start R and enter:
+
+``` r
+browseVignettes("simpleSingleCell")
+```
+:::
+
+::: {.callout-note icon="false"}
+Key packages used throughout:
+
+``` r
+suppressPackageStartupMessages({
+  library(scRNAseq)
+  library(SingleCellExperiment)
+  library(scater)
+  library(scran)
+  library(scuttle)
+  library(batchelor)
+  library(AnnotationHub)
+  library(ggplot2)
+  library(igraph)
+})
+```
+:::
+
+## Objective
+
+### From reads to a count matrix
+
+-   Single-cell RNA sequencing (scRNA-seq) is widely used to profile the transcriptome of individual cells.
+-   Single-cell RNA-seq starts as millions of sequencing reads that must be summarized into a **gene × cell expression matrix**.\
+-   Typically, each **row** is a gene and each **column** is a cell; entries are the number of reads or UMIs assigned to that gene in that cell.\
+-   **UMI counts** are treated like read counts but are less affected by PCR amplification, giving a cleaner measure of the number of captured molecules.\
+-   Once this quantification is done, all downstream QC, normalization, and analysis in R/Bioconductor operate on this count matrix.
+
+![Fig 1: Schematic of a typical scRNA-seq analysis workflow. Each stage (separated by dashed lines) consists of a number of specific steps, many of which operate on and modify a SingleCellExperiment instance.](images/paste-1.png){fig-align="center" width="612"}
+
+## 3Protocols for 3Dataset - 'simpleSingleCell' workflow pipeline
+
+### [3 Protocol's : sc-RNA Analysis following count matrix.]{.underline}
+
+Constructing the count matrix depends strongly on the experimental protocol:
+
+[1. Droplet-based protocols]{.underline}
+
+-   Examples: 10X Genomics, inDrop, Drop-seq.
+
+-   Many cells, 3′ UMI counts, shallow coverage per cell.
+
+2.  [Plate-based protocols with UMIs]{.underline}
+
+-   Examples: CEL‑seq2, MARS‑seq.
+
+-   Fewer cells, UMI counts, deeper coverage per cell.
+
+[3. Plate-based protocols with full-length reads]{.underline}
+
+-   Examples: Smart‑seq2, sciRNA‑seq.
+
+-   High coverage per cell, non-UMI read counts.
+
+###  [3-Dataset using  'simpleSingleCell' workflow pipeline:]{.underline}
+
+Goal: Comparing three scRNA‑seq protocols and biological systems using a common Bioconductor workflow 'simpleSingleCell\`.
+
+In this project we analyze one dataset from each category
+
+Datasets & questions:
+
+1.  **Paul et al. Mouse HSCs Measured with (MARS‑seq)** - (Plate + UMI).
+
+-   Mouse haematopoietic stem & progenitor hierarchy.
+-   Question: how does transcription change along the myeloid–erythroid differentiation trajectory?
+
+2.  **Bach et al. Mouse mammary Epithelial cells with (10X Genomics)** - (Droplet + UMI)
+
+-   Mouse mammary epithelium and microenvironment.
+
+-   Question: what cell types and states are present in the mammary gland during gestation?
+
+3.  **Messmer et al. Human hESC with (Smart‑seq2)** - (Plate + Reads full-length)
+
+-   Human embryonic stem cells, naive and primed states plus early differentiation.
+
+-   Question: how heterogeneous are naive/primed hESCs and early lineages at single‑cell resolution?
+
+All three are analyzed with an **OSCA/simpleSingleCell-style pipeline**.
+
+## Workflow overview
+
+``` text
+Raw counts (protocol-specific)
+        ↓
+   Quality Control       ← remove low-quality cells & outliers
+        ↓
+   Normalization         ← scran deconvolution size factors + logNormCounts
+        ↓
+Variance Modelling       ← modelGeneVar(…)/modelGeneVarByPoisson/WithSpikes
+        ↓
+HVG Selection            ← choose genes with variance above technical trend
+        ↓
+Dimensional Reduction    ← PCA, t-SNE / UMAP
+        ↓
+Graph-based Clustering   ← SNN graph → Walktrap / Louvain
+        ↓
+Marker Gene Detection    ← findMarkers to define cluster identities
+```
+
+Core idea: **same pipeline** across protocols, with protocol-specific tweaks.
+
+## Key packages (How we did it)
+
+| Package                | Role                                          |
+|------------------------|-----------------------------------------------|
+| `SingleCellExperiment` | Core container for counts + metadata          |
+| `scRNAseq`             | Access Paul, Bach, Messmer datasets           |
+| `scater` & `scuttle`   | QC metrics, visualization, logNormCounts      |
+| `scran`                | Deconvolution normalization, HVGs, clustering |
+| `batchelor`            | Batch / covariate regression (Messmer)        |
+| `AnnotationHub`        | Gene annotation via EnsDb / Ensembl           |
+| `ggplot2`              | Visualization                                 |
+| `igraph`               | SNN graph & community detection               |
+
+## 1. Paul mouse HSC (MARS‑seq)
+
+### 1.1 Data & protocol
+
+-   Plate-based **MARS‑seq UMI** protocol
+-   It is a Low-throughput but high-depth protocol targeting Mouse Bone marrow Hematopoietic stem and progenitor cells under multiple treatments.
+-   Moderate numbers of cells per plate; UMI counts, shallow coverage per cell but good for trajectories.
+
+::: {.callout-note icon="false"}
+**Data loading:**
+
+``` r
+library(scRNAseq)
+sce.paul <- PaulHSCData(ensembl=TRUE)
+```
+:::
+
+***Biological question :***
+
+```         
+Q: How do Transcriptional programs change along the HSC → Myeloid/Erythroid differentiation trajectory?
+```
+
+### Methods (what & how)
+
+### 1.2 QC(Quality Control):
+
+-   Per-cell QC metrics: library size, detected genes; limited mitochondrial annotation.
+-   Plate-aware QC: Identified “bad” plates with unusually low thresholds, then recomputed QC excluding them.
+
+::: {.callout-note icon="false"}
+**QC:**
+
+``` r
+library(scater)
+stats <- perCellQCMetrics(sce.paul) 
+qc <- quickPerCellQC(stats, batch=sce.paul$Plate_ID)
+
+# Detecting batches with unusually low threshold values.
+lib.thresholds <- attr(qc$low_lib_size, "thresholds")["lower",]
+nfeat.thresholds <- attr(qc$low_n_features, "thresholds")["lower",]
+ignore <- union(names(lib.thresholds)[lib.thresholds < 100],
+          names(nfeat.thresholds)[nfeat.thresholds < 100])
+```
+:::
+
+![Figure 1.1: Distribution of each QC metric across cells in the Paul HSC dataset. Each point repr](MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-1.png){fig-align="center" width="502"}
+
+### 1.3 Normalization & HVGs:
+
+-   Deconvolution size factors (`computeSumFactors`) and `logNormCounts`.
+-   Poisson-based mean–variance modeling (`modelGeneVarByPoisson`) → top \~10% HVGs.
+
+::: {.callout-note icon="false"}
+**Norm. & Variance Mod.**
+
+``` r
+## Normalization
+library(scran)
+set.seed(101000110)
+clusters <- quickCluster(sce.paul)
+sce.paul <- computeSumFactors(sce.paul, clusters=clusters)
+sce.paul <- logNormCounts(sce.paul)
+
+## HVGs
+set.seed(10010101) 
+dec.paul <- modelGeneVarByPoisson(sce.paul) 
+```
+:::
+
+![Figure 1.2: Relationship between the library size factors and the deconvolution size factors in the Paul HSC dataset.](MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-2.png){fig-align="center" width="470"}
+
+![Figure 1.3: Per-gene variance as a function of the mean for the log-expression values in the Paul HSC dataset. Each point represents a gene (black) with the mean-variance trend (blue) fitted to simulated Poisson noise.](MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-3.png){fig-align="center" width="419"}
+
+### 1.4 Dimensional reduction & clustering:
+
+-   `denoisePCA` → t‑SNE on HVGs.\
+-   SNN graph (`buildSNNGraph`) + community detection (`cluster_louvain` / `cluster_walktrap`).
+
+::: {.callout-note icon="false"}
+**Dim. Red**
+
+``` r
+## Dim. Reduction 
+set.seed(101010011) 
+sce.paul <- denoisePCA(sce.paul, technical=dec.paul, subset.row=top.paul) 
+sce.paul <- runTSNE(sce.paul, dimred="PCA")
+```
+
+**Clustering**
+
+``` r
+snn.gr <- buildSNNGraph(sce.paul, use.dimred="PCA", type="jaccard") 
+colLabels(sce.paul) <- factor(igraph::cluster_louvain(snn.gr)$membership)
+
+plotTSNE(sce.paul, colour_by="label", other_fields="Batch_desc") +      
+          facet_wrap(~Batch_desc)
+```
+:::
+
+![Figure 1.4 : t -SNE plot of the Paul HSC dataset, where each point represents a cell and is colored according to the assigned cluster.](MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-5.png){fig-align="center" width="474"}
+
+### 1.5 Markers:
+
+-   `findMarkers` per cluster; interpret using known myeloid/erythroid markers.
+
+### 1.6 Results (what we learned):
+
+-   QC removed cells with extremely low library sizes and detected genes, especially on problematic plates.
+-   Poisson-based HVG selection captured genes varying along lineage trajectories rather than pure noise.
+-   t‑SNE revealed **gradient-like manifolds** instead of perfectly discrete clusters, reflecting continuous differentiation.
+-   Clusters corresponded to early HSCs vs more committed progenitors, with markers such as *Gata1*, *Mpo*, *Elane* distinguishing branches.
+
+**Take‑home:** MARS‑seq is well-suited for mapping *continuous* differentiation trajectories when combined with careful plate-aware QC and Poisson variance modeling.
+
+## 2. Bach Mouse mammary (10X Genomics)
+
+### 2.1 Data & protocol
+
+-   The Bach mouse mammary dataset profile mammary epithelial cells (and associated stromal/immune cells) using the High-throughput **10X Genomics droplet-based 3′ UMI** protocol scRNA‑seq.
+-   The goal is to chart the hierarchy of mammary epithelial lineages (basal, luminal progenitors, mature luminal) and their responses across developmental stages\
+-   Many Mouse mammary epithelial cells, plus stromal and immune cells from gestation - shallow coverage per cell.
+
+::: {.callout-note icon="false"}
+**Data Loading**
+
+``` r
+library(scRNAseq) 
+sce.mam <- BachMammaryData(samples="G_1")
+```
+:::
+
+**Biological question**
+
+```         
+Q: What epithelial subtypes and stromal/immune populations exist in the mammary gland during gestation? 
+```
+
+### Methods (what & how)
+
+### 2.2 QC
+
+-   Per-cell metrics including library size, detected features, and mitochondrial percentage using `perCellQCMetrics`.\
+-   `quickPerCellQC` used thresholds on library size, detected genes, and mitochondrial percent to discard low-quality cells.
+
+::: {.callout-note icon="false"}
+**QC**
+
+``` r
+is.mito <- rowData(sce.mam)$SEQNAME == "MT" 
+stats <- perCellQCMetrics(sce.mam, subsets=list(Mito=which(is.mito))) 
+qc <- quickPerCellQC(stats, percent_subsets="subsets_Mito_percent") 
+sce.mam <- sce.mam[,!qc$discard]
+```
+:::
+
+![Figure 2.1: Distribution of each QC metric across cells in the Bach mammary gland dataset. Each point represents a cell and is colored according to whether that cell was discarded.](MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-7.png){fig-align="center" width="528"}
+
+### 2.3 Normalization & HVGs:
+
+-   Deconvolution size factors (`computeSumFactors`) and `logNormCounts`.
+-   Poisson-based variance modeling (`modelGeneVarByPoisson`) → top \~10% HVGs.
+
+::: {.callout-note icon="false"}
+**Norm**
+
+``` r
+## Norm.
+library(scran) 
+set.seed(10100110) 
+clusters <- quickCluster(sce.mam) 
+sce.mam <- computeSumFactors(sce.mam, clusters=clusters) 
+sce.mam <- logNormCounts(sce.mam)
+```
+
+**HVGs**
+
+``` r
+set.seed(100110) 
+dec.mam <- modelGeneVarByPoisson(sce.mam) 
+top.mam <- getTopHVGs(dec.mam, prop=0.1)
+plot(dec.mam$mean, dec.mam$total, pch=16, cex=0.5,     
+    xlab="Mean of log-expression", 
+    ylab="Variance of log-expression") 
+```
+:::
+
+```         
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.  ##   0.264   0.520   0.752   1.000   1.207  10.790
+```
+
+![Figure 2.2: Relationship between the library size factors and the deconvolution size factors in the Bach mammary gland dataset.](MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-9.png){fig-align="center" width="405"}
+
+![Figure 2.3: Per-gene variance as a function of the mean for the log-expression values in the ch mammary gland dataset. Each point represents a gene (black) with the mean-variance trend (blue) fitted to simulated Poisson counts.](MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-10.png){fig-align="center" width="424"}
+
+### 2.4 Dimensional reduction & clustering:
+
+-   `denoisePCA` on HVGs, followed by t‑SNE.\
+-   SNN graph with higher k (e.g. k = 25) for coarser clusters; Walktrap clustering.
+
+::: {.callout-note icon="false"}
+**Dim Red**
+
+``` r
+## Dim Red.
+library(BiocSingular) 
+set.seed(101010011) 
+sce.mam <- denoisePCA(sce.mam, technical=dec.mam, subset.row=top.mam) 
+sce.mam <- runTSNE(sce.mam, dimred="PCA")
+```
+
+**clustering**
+
+``` r
+snn.gr <- buildSNNGraph(sce.mam, use.dimred="PCA", k=25) 
+colLabels(sce.mam) <- factor(igraph::cluster_walktrap(snn.gr)$membership)
+```
+:::
+
+![Figure 2.4: Obligatory t -SNE plot of the Bach mammary gland dataset, where each point represents a cell and is colored according to the assigned cluster.](MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-11.png){fig-align="center" width="452"}
+
+### 2.5 Markers:
+
+-   `findMarkers` used to identify cell-type markers and annotate clusters as basal, luminal progenitors, mature luminal, fibroblasts, immune cells, etc.
+
+### 2.6 Bach mammary – Results (what we learned)
+
+-   QC effectively removed low-count, high-mito cells, visible as a low-count/high-mito tail in QC plots.
+-   Normalization and Poisson-based HVG detection highlighted genes with strong biological variance across mammary populations.\
+-   t‑SNE showed **clearly separated clusters**, unlike the gradient seen in Paul HSC:
+    -   Basal cells, luminal progenitors, mature luminal cells, stromal fibroblasts, and immune populations.
+-   Cluster markers matched canonical genes such as *Krt5* (basal), *Krt8/18* (luminal), *Esr1* (hormone-responsive), and immune markers.
+
+**Take‑home:** 10X excels at mapping **diverse discrete cell types** in complex tissues, with standard QC and deconvolution normalization.
+
+## 3. Messmer hESC (Smart‑seq2)
+
+### 3. 1 Data & protocol
+
+-   Plate-based **Smart‑seq2 full-length** protocol.\
+-   Human embryonic stem cells in naive and primed pluripotent states, plus early differentiation states.\
+-   Fewer cells but high read depth and sensitivity per cell.
+
+::: {.callout-note icon="false"}
+**Data Loading**
+
+``` r
+## Dim Red.
+{r}
+library(scRNAseq)
+sce.mess <- MessmerESCData()
+sce.mess$`experiment batch` <- factor(sce.mess$`experiment batch`)
+```
+:::
+
+**Biological question**
+
+```         
+Q: How heterogeneous are naive vs primed hESCs and early differentiation trajectories at the transcriptomic level?
+```
+
+### 3.B Messmer hESC – Methods (what & how)
+
+### 3.2 QC:
+
+-   Per-cell library size, detected genes, mitochondrial percentage, and ERCC spike‑in percentages across experiment batches and phenotypes.
+-   `quickPerCellQC` and related filters used to remove low-quality cells per batch.
+
+::: {.callout-note icon="false"}
+**QC**
+
+``` r
+sce.mess <- addPerCellQCMetrics(sce.mess, 
+                                subsets=list(Mito=grep("^MT-", 
+                                                  rowData(sce.mess)$SYMBOL)))
+
+# Define filtering thresholds and identify low-quality cells
+qc.stats <- perCellQCMetrics(sce.mess)
+reasons <- perCellQCFilters(sce.mess, 
+                            sub.fields=c("subsets_Mito_percent", "altexps_ERCC_percent"))
+```
+:::
+
+![Figure 3.1: Distribution of QC metrics across batches (x-axis) and phenotypes (facets) for cells in the Messmer hESC dataset. Each point is a cell and is colored by whether it was discarded.](MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-12.png){fig-align="center" width="450"}
+
+### 3.3 Normalization & variance modeling:
+
+-   Deconvolution size factors (`computeSumFactors`) and logNormCounts.
+-   Spike‑in–aware variance modeling (`modelGeneVarWithSpikes`) with blocking by experiment batch to separate technical noise from biological variation.
+
+::: {.callout-note icon="false"}
+**NORM.**
+
+``` r
+library(scran)
+
+set.seed(10000)
+clusters <- quickCluster(sce.mess)
+sce.mess <- computeSumFactors(sce.mess, cluster=clusters)
+sce.mess <- logNormCounts(sce.mess)
+```
+:::
+
+![Figure 3.2: Deconvolution size factors plotted against the library size (left) and spike-in size factors plotted against the deconvolution size factors (right). Each point is a cell and is colored by its phenotype.](MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-13.png){fig-align="center" width="517"}
+
+### 3.4 Cell cycle & batch correction:
+
+-   Cell cycle phase assignment using `cyclone` with human marker pairs.
+-   Regression-based correction (`correctExperiments` with RegressParam) including phenotype and batch covariates.
+-   Contrastive PCA and sparse cPCA (`scPCA`) using primed-only cells as background to reduce cell-cycle-driven variation.
+
+::: {.callout-note icon="false"}
+**C.C/B.C**
+
+``` r
+hs_pairs <- readRDS(system.file("exdata", "human_cycle_markers.rds", package="scran"))
+assigned <- cyclone(sce.mess, pairs=hs_pairs, 
+                    gene.names=rownames(sce.mess),
+                    BPPARAM=BiocParallel::MulticoreParam(10))
+sce.mess$phase <- assigned$phases
+
+dec <- modelGeneVarWithSpikes(sce.mess, "ERCC", block = sce.mess$`experiment batch`)
+```
+:::
+
+![Figure 3.3: Per-gene variance of the log-normalized expression values in the Messmer hESC dataset, plotted against the mean for each batch. Each point represents a gene with spike-ins shown in red and the fitted trend shown in blue.](MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-15.png){fig-align="center" width="531"}
+
+### 3.5 Dimensional reduction & clustering:
+
+-   PCA and t‑SNE on corrected HVG expression; SNN graph clustering; silhouette analysis with `bluster` to quantify phase separation.
+
+::: {.callout-note icon="false"}
+**DIM. RED**
+
+``` r
+sce.mess <- runPCA(sce.mess, 
+                   subset_row = top.hvgs, 
+                   exprs_values = "corrected", 
+                   BSPARAM = BiocSingular::IrlbaParam())
+
+sce.mess <- runTSNE(sce.mess, dimred = "PCA", perplexity = 40)
+```
+
+**Clustering**
+
+``` r
+gridExtra::grid.arrange(
+    plotTSNE(sce.mess, colour_by = "phenotype") + ggtitle("By phenotype"),
+    plotTSNE(sce.mess, colour_by = "experiment batch") + ggtitle("By batch "),
+    plotTSNE(sce.mess, colour_by = "CDK1", swap_rownames="SYMBOL") + ggtitle("By CDK1"),
+    plotTSNE(sce.mess, colour_by = "phase") + ggtitle("By phase"),
+    ncol = 2
+)
+```
+:::
+
+![Figure 3.4: Obligatory t -SNE plots of the Messmer hESC dataset, where each point is a cell and is colored by various attributes.](MS%20BIOINFORMATICS%20Courses%20(HoodCollege)/BIFX-551%20Adv%20Programming%20for%20Bioinformatics\images\paste-16.png){fig-align="center" width="670"}
+
+### 3.6 Messmer hESC – Results (what we learned)
+
+-   QC combining mitochondrial and ERCC metrics removed low-quality cells evenly across batches and phenotypes.
+-   Spike‑in–aware variance modeling identified HVGs that separate naive and primed states instead of just capturing technical noise.
+-   Cell cycle was a major driver of variation in naive and primed cells; cPCA/scPCA reduced phase-based separation while maintaining naive vs primed structure, confirmed by reduced silhouette widths for phases.
+-   Clusters showed enrichment of pluripotency markers (*POU5F1/OCT4*, *NANOG*, *SOX2*) in pluripotent clusters and lineage markers in differentiating subsets.
+
+**Take‑home:** Smart‑seq2 plus spike‑ins and cPCA allow fine-grained analysis of **subtle pluripotent state differences and early lineage specification**.
+
+## Cross-dataset comparison: protocols & workflows
+
+| Aspect | Paul HSC (MARS‑seq) | Bach mammary (10X) | Messmer hESC (Smart‑seq2) |
+|------------------|------------------|------------------|-------------------|
+| Protocol | Plate-based UMI | Droplet-based 3′ UMI | Plate-based full-length |
+| Organism / system | Mouse HSC & progenitors | Mouse mammary + stroma | Human ESCs & early lineages |
+| QC focus | Plate-aware thresholds | Library + mito filters | Library, mito, ERCC, batches |
+| Variance modeling | Poisson trend | Poisson trend | Spike‑in + batch-aware trend |
+| Main structure | Gradient trajectories | Discrete cell types | Pluripotent vs differentiating states |
+
+## Challenges
+
+-   Managing Bioconductor data packages on a very recent R/Bioconductor release (AnnotationHub, scRNAseq, HCAData) required extra care.
+
+-Namespace conflicts ex: dplyr’s `select()` vs AnnotationDbi’s `select()` for EnsDb objects; solved by using `AnnotationDbi::select()`.
+
+-   Protocol-specific design quirks especially Plate issues in Paul HSC, high mitochondrial tails in Bach 10X, strong cell cycle signals in Messmer hESC.
+
+-Interpretation of graphs was a challenge mainly Continuous gradients (Paul) vs discrete clusters (Bach, Messmer) require different visualization and annotation strategies.
+
+## Lessons learned
+
+-   Installing Bioconductor dependencies with compatible versions
+-   Matching gene symbols to Ensembl IDs for the `cyclone` classifier
+-   Choosing appropriate QC thresholds — MAD-based thresholds adapt to the data but require biological judgment
+-   t-SNE is stochastic — set a seed for reproducibility
+
+## Conclusion
+
+Using a common Bioconductor single-cell workflow, it is possible to analyze and interpret diverse single-cell datasets—ranging from hematopoietic progenitors to mammary gland tissue to embryonic stem cells—by adapting a few key steps to the underlying protocol and biological context. For each dataset: • Paul HSC illustrates how scRNA‑seq can reconstruct continuous differentiation manifolds and identify progenitor hierarchy. • Bach mammary shows how high-throughput droplet data reveal multiple discrete cell populations and tissue organization. • Messmer ESC demonstrates how plate-based full-length protocols enable detailed characterization of pluripotent and early differentiation states. The step-by-step workflow (QC, normalization, HVGs, DR, clustering, marker analysis) is conceptually identical across all three, while protocol-specific choices (e.g., normalization strategy) and interpretation focus differ.
+
+## Attribution
+
+This project is based on the **simpleSingleCell** Bioconductor workflow:
+
+> Lun ATL, McCarthy DJ, Marioni JC (2016). *A step-by-step workflow for low-level analysis of single-cell RNA-seq data with Bioconductor.* F1000Research 5:2122. <https://doi.org/10.12688/f1000research.9501.2>
+
+Dataset: Wilson et al. (2015), GSE61533. Updated OSCA book: <https://osca.bioconductor.org>
